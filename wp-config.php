@@ -20,13 +20,13 @@
 
 // ** MySQL settings ** //
 /** The name of the database for WordPress */
-define( 'DB_NAME', 'khabared_ucation' );
+define( 'DB_NAME', ' ' );
 
 /** MySQL database username */
-define( 'DB_USER', 'khabared_ucation' );
+define( 'DB_USER', ' ' );
 
 /** MySQL database password */
-define( 'DB_PASSWORD', 'educ@tion123' );
+define( 'DB_PASSWORD', ' ' );
 
 /** MySQL hostname */
 define( 'DB_HOST', 'localhost' );
