@@ -62,9 +62,6 @@
 							printf( esc_html__( 'Copyright &#169; %1$s %2$s.', 'hitmag' ), date_i18n( 'Y' ), $site_link );
 						}		
 					?>
-				</div>	
-				<div class="designby">
-				    <p>design and developed by <a href="https://www.facebook.com/pradipAAryal">Pradip Aryal</a></p>
 				</div>
 			</div><!-- .hm-container -->
 		</div><!-- .site-info -->
