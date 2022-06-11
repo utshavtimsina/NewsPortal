@@ -29,7 +29,7 @@ define( 'DB_USER', 'root' );
 define( 'DB_PASSWORD', 'educ@tion123' );
 
 /** MySQL hostname */
-define( 'DB_HOST', 'localhost' );
+define( 'DB_HOST', '3.111.21.155' );
 
 /** Database Charset to use in creating database tables. */
 define( 'DB_CHARSET', 'utf8' );
