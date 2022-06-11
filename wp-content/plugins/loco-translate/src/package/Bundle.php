@@ -56,8 +56,8 @@ abstract class Loco_package_Bundle extends ArrayObject implements JsonSerializab
 
     /**
      * Get system (i.e. "global") target locations for all projects of this type.
-     * These are aways append to configs, and always excluded from serialization
-     * @return array<string> absolute directory paths
+     * These are always append to configs, and always excluded from serialization
+     * @return string[] absolute directory paths
      */
     abstract public function getSystemTargets();
 
@@ -79,6 +79,12 @@ abstract class Loco_package_Bundle extends ArrayObject implements JsonSerializab
      */
     abstract public function getType();
 
+    /**
+     * Get absolute URL to bundle root, with trailing slash
+     * @return string
+     */
+    abstract public function getDirectoryUrl();
+
 
     /**
      * Construct bundle from unique ID containing type and handle
@@ -98,7 +104,7 @@ abstract class Loco_package_Bundle extends ArrayObject implements JsonSerializab
      * @throws Loco_error_Exception
      */
     public static function createType( $type, $handle ){
-        $func = array( 'Loco_package_'.ucfirst($type), 'create' );
+        $func = [ 'Loco_package_'.ucfirst($type), 'create' ];
         if( is_callable($func) ){
             $bundle = call_user_func( $func, $handle );
         }
@@ -108,14 +114,35 @@ abstract class Loco_package_Bundle extends ArrayObject implements JsonSerializab
         return $bundle;
     }
 
- 
+
+    /**
+     * Resolve a file path to a plugin, theme or the core 
+     * @param Loco_fs_File
+     * @return Loco_package_Bundle|null
+     */
+    public static function fromFile( Loco_fs_File $file ){
+        if( $file->underThemeDirectory() ){
+            return Loco_package_Theme::fromFile($file);
+        }
+        else if( $file->underPluginDirectory() ){
+            return Loco_package_Plugin::fromFile($file);
+        }
+        else if( $file->underWordPressDirectory() && ! $file->underContentDirectory() ){
+            return Loco_package_Core::create();
+        }
+        else {
+            return null;
+        }
+    }
+
+
     /**
      * Construct from WordPress handle and friendly name
      * @param string
      * @param string
      */
     public function __construct( $handle, $name ){
-        parent::__construct( array() );
+        parent::__construct( [] );
         $this->setHandle($handle)->setName($name);
         $this->xpaths = new Loco_fs_FileList;
     }
@@ -126,7 +153,7 @@ abstract class Loco_package_Bundle extends ArrayObject implements JsonSerializab
      * @return Loco_package_Bundle
      */
     public function reload(){
-        return call_user_func( array( get_class($this), 'create' ), $this->getSlug() );
+        return call_user_func( [ get_class($this), 'create' ], $this->getSlug() );
     }
 
 
@@ -278,9 +305,9 @@ abstract class Loco_package_Bundle extends ArrayObject implements JsonSerializab
      * @return string[]
      */
     public function getVendorRoots(){
-        $dirs = array();
+        $dirs = [];
         $base = (string) $this->getDirectoryPath();
-        foreach( array('node_modules','vendor') as $f ){
+        foreach( ['node_modules','vendor'] as $f ){
             $path = $base.'/'.$f;
             if( is_dir($path) ){
                 $dirs[] = $path;
@@ -406,7 +433,7 @@ abstract class Loco_package_Bundle extends ArrayObject implements JsonSerializab
      * @return array indexed by Text Domain name
      */
     public function exportGrouped(){
-        $domains = array();
+        $domains = [];
         /* @var $proj Loco_package_Project */
         foreach( $this as $proj ){
             $domain = $proj->getDomain();
@@ -516,7 +543,7 @@ abstract class Loco_package_Bundle extends ArrayObject implements JsonSerializab
 
     /**
      * Do basic configuration from bundle meta data (file headers)
-     * @param array header tags from theme or plugin bootstrapper
+     * @param array header tags from theme or plugin bootstrap file
      * @return bool whether configured
      */
     public function configureMeta( array $header ){
@@ -539,16 +566,15 @@ abstract class Loco_package_Bundle extends ArrayObject implements JsonSerializab
             if( isset($header['DomainPath']) && ( $path = trim($header['DomainPath'],'/') ) ){
                 $project->addTargetDirectory( $base.'/'.$path );
             }
-            else if( $this->solo ){
-                // skip
-            }
             // else use standard language path if it exists
-            else if( is_dir($base.'/languages') ) {
-                $project->addTargetDirectory($base.'/languages');
-            }
-            // else add bundle root by default
-            else {
-                $project->addTargetDirectory( $base );
+            else if( ! $this->solo ){
+                if( is_dir($base.'/languages') ) {
+                    $project->addTargetDirectory($base.'/languages');
+                }
+                // else add bundle root by default
+                else {
+                    $project->addTargetDirectory($base);
+                }
             }
             // single file bundles can have only one source file
             if( $this->solo ){
@@ -576,6 +602,8 @@ abstract class Loco_package_Bundle extends ArrayObject implements JsonSerializab
      * Configure bundle from canonical sources.
      * Source order is "db","file","meta" where meta is the auto-config fallback.
      * No deep scanning is performed at this point
+     * @param string
+     * @param string[] header tags from theme or plugin bootstrap file
      * @return Loco_package_Bundle
      */
     public function configure( $base, array $header ){
@@ -587,18 +615,20 @@ abstract class Loco_package_Bundle extends ArrayObject implements JsonSerializab
 
     /**
      * Get the custom config saved in WordPress DB for this bundle
-     * @return Loco_config_CustomSaved
+     * @return Loco_config_CustomSaved|null
      */
     public function getCustomConfig(){
         $custom = new Loco_config_CustomSaved;
         if( $custom->setBundle($this)->fetch() ){
             return $custom;
         }
+        return null;
     }
 
 
     /**
      * Inherit another bundle. Used for child themes to display parent translations
+     * @param Loco_package_Bundle
      * @return Loco_package_Bundle
      */
     public function inherit( Loco_package_Bundle $parent ){
@@ -634,11 +664,11 @@ abstract class Loco_package_Bundle extends ArrayObject implements JsonSerializab
 
 
     /**
-     * @return Loco_package_Project
+     * @return Loco_package_Project|null
      */
     public function getDefaultProject(){
         $i = 0;
-        /* @var $project Loco_package_Project */
+        /* @var Loco_package_Project $project */
         foreach( $this as $project ){
             if( $project->isDomainDefault() ){
                 return $project;
@@ -649,6 +679,7 @@ abstract class Loco_package_Bundle extends ArrayObject implements JsonSerializab
         if( 1 === $i ){
             return $project;
         }
+        return null;
     }
 
     
@@ -666,7 +697,7 @@ abstract class Loco_package_Bundle extends ArrayObject implements JsonSerializab
      * @return array<Loco_package_TextDomain>
      */
     public function getDomains(){
-        $domains = array();
+        $domains = [];
         /* @var $project Loco_package_Project */
         foreach( $this as $project ){
             if( $domain = $project->getDomain() ){
@@ -690,7 +721,7 @@ abstract class Loco_package_Bundle extends ArrayObject implements JsonSerializab
         $t = Loco_data_RecentItems::get()->hasBundle( $this->getId() );
         // else have to scan targets across all projects
         if( 0 === $t ){
-            /* @var $project Loco_package_Project */
+            /* @var Loco_package_Project $project */
             foreach( $this as $project ){
                 $t = max( $t, $project->getLastUpdated() );
             }
@@ -716,7 +747,7 @@ abstract class Loco_package_Bundle extends ArrayObject implements JsonSerializab
      * @return Loco_package_Bundle
      */
     public function clear(){
-        $this->exchangeArray( array() );
+        $this->exchangeArray( [] );
         $this->xpaths = new Loco_fs_FileList;
         $this->saved = false;
         return $this;
@@ -726,6 +757,7 @@ abstract class Loco_package_Bundle extends ArrayObject implements JsonSerializab
     /**
      * @return array
      */
+    #[ReturnTypeWillChange]
     public function jsonSerialize(){
         $writer = new Loco_config_BundleWriter( $this );
         return $writer->toArray();

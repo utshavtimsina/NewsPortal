@@ -25,7 +25,7 @@ class Loco_gettext_Extraction {
 
     /**
      * List of files skipped due to memory limit
-     * @var Loco_fs_FileList
+     * @var Loco_fs_FileList|null
      */
     private $skipped;
 
@@ -42,16 +42,16 @@ class Loco_gettext_Extraction {
      */
     public function __construct( Loco_package_Bundle $bundle ){
         loco_check_extension('ctype');
-        loco_check_extension('mbstring');
         if( ! loco_check_extension('tokenizer') ){
             throw new Loco_error_Exception('String extraction not available without required extension');
         }
         $this->bundle = $bundle;
         $this->extracted = new LocoExtracted;
         $this->extracted->setDomain('default');
-        $this->extras = array();
-        if( $default = $bundle->getDefaultProject() ){
-            $domain = (string) $default->getDomain();
+        $this->extras = [];
+        $default = $bundle->getDefaultProject();
+        if( $default instanceof Loco_package_Project ){
+            $domain = $default->getDomain()->getName();
             // wildcard stands in for empty text domain, meaning unspecified or dynamic domains will be included.
             // note that strings intended to be in "default" domain must specify explicitly, or be included here too.
             if( '*' === $domain ){
@@ -59,12 +59,12 @@ class Loco_gettext_Extraction {
                 $this->extracted->setDomain('');
             }
             // pull bundle's default metadata. these are translations that may not be encountered in files
-            $extras = array();
+            $extras = [];
             $header = $bundle->getHeaderInfo();
             foreach( $bundle->getMetaTranslatable() as $prop => $notes ){
                 if( $source = $header->__get($prop) ){
                     if( is_string($source) ){
-                        $extras[] = array( $source, $notes );
+                        $extras[] = [ $source, $notes ];
                     }
                 }
             }
@@ -88,24 +88,26 @@ class Loco_gettext_Extraction {
         if( function_exists('wp_raise_memory_limit') ){
             wp_raise_memory_limit('loco');
         }
-        /* @var $file Loco_fs_File */
+        /* @var Loco_fs_File $file */
         foreach( $project->findSourceFiles() as $file ){
             $type = $opts->ext2type( $file->extension() );
             $extr = loco_wp_extractor($type);
             if( 'js' !== $type ) {
                 // skip large files for PHP, because token_get_all is hungry
-                $size = $file->size();
-                $this->maxbytes = max( $this->maxbytes, $size );
-                if( $size > $max ){
-                    $list = $this->skipped or $list = ( $this->skipped = new Loco_fs_FileList() );
-                    $list->add( $file );
-                    continue;
+                if( 0 !== $max ){
+                    $size = $file->size();
+                    $this->maxbytes = max( $this->maxbytes, $size );
+                    if( $size > $max ){
+                        $list = $this->skipped or $list = ( $this->skipped = new Loco_fs_FileList() );
+                        $list->add( $file );
+                        continue;
+                    }
                 }
                 // extract headers from theme PHP files in
                 if( $project->getBundle()->isTheme() ){
-                    $extr->headerize( array (
+                    $extr->headerize(  [
                         'Template Name' => 'Name of the template',
-                    ), (string) $project->getDomain() );
+                    ], (string) $project->getDomain() );
                 }
             }
             $this->extracted->extractSource( $extr, $file->getContents(), $file->getRelativePath( $base ) );
@@ -124,7 +126,27 @@ class Loco_gettext_Extraction {
                 $this->extracted->pushMeta( $args[0], $args[1], $domain );
             }
         }
-        $this->extras = array();
+        $this->extras = [];
+        return $this;
+    }
+
+
+    /**
+     * Add a custom source string constructed from `new Loco_gettext_String(msgid,[msgctxt])`
+     * @param Loco_gettext_String
+     * @param string optional domain, if not current bundle's default
+     * @return Loco_gettext_Extraction
+     */
+    public function addString( Loco_gettext_String $string, $domain = '' ){
+        if( ! $domain ) {
+            $default = $this->bundle->getDefaultProject();
+            $domain = (string) ( $default ? $default->getDomain() :  $this->extracted->getDomain() );
+        }
+        $index = $this->extracted->pushEntry( $string->exportSingular(), $domain );
+        if( $string->hasPlural() ){
+            $this->extracted->pushPlural( $string->exportPlural(), $index );
+        }
+        
         return $this;
     }
 
@@ -144,8 +166,9 @@ class Loco_gettext_Extraction {
      * @return Loco_gettext_Data
      */
     public function getTemplate( $domain ){
+        do_action('loco_extracted_template', $this, $domain );
         $data = new Loco_gettext_Data( $this->extracted->filter($domain) );
-        return $data->templatize();
+        return $data->templatize( $domain );
     }
 
 

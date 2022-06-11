@@ -5,33 +5,57 @@ if ( ! class_exists( 'FooGallery_Default_Gallery_Template' ) ) {
 	define( 'FOOGALLERY_DEFAULT_GALLERY_TEMPLATE_URL', plugin_dir_url( __FILE__ ) );
 
 	class FooGallery_Default_Gallery_Template {
+
+		const TEMPLATE_ID = 'default';
+
 		/**
 		 * Wire up everything we need to run the extension
 		 */
 		function __construct() {
+			// @formatter:off
 			add_filter( 'foogallery_gallery_templates', array( $this, 'add_template' ) );
-
-			add_action( 'foogallery_located_template-default', array( $this, 'enqueue_dependencies' ) );
 
 			add_filter( 'foogallery_gallery_templates_files', array( $this, 'register_myself' ) );
 
 			//build up the thumb dimensions from some arguments
-			add_filter( 'foogallery_calculate_thumbnail_dimensions-default', array(
-				$this,
-				'build_thumbnail_dimensions_from_arguments'
-			), 10, 2 );
+			add_filter( 'foogallery_calculate_thumbnail_dimensions-default', array( $this, 'build_thumbnail_dimensions_from_arguments' ), 10, 2 );
 
 			//build up the thumb dimensions on save
-			add_filter( 'foogallery_template_thumbnail_dimensions-default', array(
-				$this,
-				'get_thumbnail_dimensions'
-			), 10, 2 );
+			add_filter( 'foogallery_template_thumbnail_dimensions-default', array( $this, 'get_thumbnail_dimensions' ), 10, 2 );
 
 			//build up the arguments needed for rendering this template
-			add_filter( 'foogallery_gallery_template_arguments-default', array(
-				$this,
-				'build_gallery_template_arguments'
-			) );
+			add_filter( 'foogallery_gallery_template_arguments-default', array( $this, 'build_gallery_template_arguments' ) );
+
+			// add a style block for the gallery based on the thumbnail width.
+			add_action( 'foogallery_loaded_template_before', array( $this, 'add_width_style_block' ), 10, 1 );
+			// @formatter:on
+		}
+
+		/**
+		 * Add a style block based on the width thumbnail size
+		 *
+		 * @param $gallery FooGallery
+		 */
+		function add_width_style_block( $gallery ) {
+			if ( self::TEMPLATE_ID !== $gallery->gallery_template ) {
+				return;
+			}
+
+			$id         = $gallery->container_id();
+			$dimensions = foogallery_gallery_template_setting('thumbnail_dimensions');
+			if ( is_array( $dimensions ) && array_key_exists( 'width', $dimensions ) && intval( $dimensions['width'] ) > 0 ) {
+				$width      = intval( $dimensions['width'] );
+
+				// @formatter:off
+				?>
+<style type="text/css">
+	<?php echo '#' . $id; ?> .fg-image {
+        width: <?php echo $width; ?>px;
+    }
+</style>
+				<?php
+				// @formatter:on
+			}
 		}
 
 		/**
@@ -56,7 +80,7 @@ if ( ! class_exists( 'FooGallery_Default_Gallery_Template' ) ) {
 		 */
 		function add_template( $gallery_templates ) {
 			$gallery_templates[] = array(
-				'slug'                  => 'default',
+				'slug'                  => self::TEMPLATE_ID,
 				'name'                  => __( 'Responsive Image Gallery', 'foogallery' ),
 				'preview_support'       => true,
 				'common_fields_support' => true,
@@ -65,6 +89,7 @@ if ( ! class_exists( 'FooGallery_Default_Gallery_Template' ) ) {
 				'mandatory_classes'     => 'fg-default',
 				'thumbnail_dimensions'  => true,
 				'filtering_support'     => true,
+				'enqueue_core'          => true,
 				'fields'                => array(
 					array(
 						'id'       => 'thumbnail_dimensions',
@@ -82,8 +107,26 @@ if ( ! class_exists( 'FooGallery_Default_Gallery_Template' ) ) {
 						)
 					),
 					array(
+						'id'       => 'mobile_columns',
+						'title'    => __( 'Mobile Layout', 'foogallery' ),
+						'desc'     => __( 'Number of columns to show on mobile (screen widths less than 600px)', 'foogallery' ),
+						'section'  => __( 'General', 'foogallery' ),
+						'default'  => '',
+						'type'     => 'radio',
+						'choices'  => array(
+							''   => __( 'Default', 'foogallery' ),
+							'fg-m-col1'   => __( '1 Column', 'foogallery' ),
+							'fg-m-col2' => __( '2 Columns', 'foogallery' ),
+							'fg-m-col3'  => __( '3 Columns', 'foogallery' ),
+						),
+						'row_data' => array(
+							'data-foogallery-change-selector' => 'input:radio',
+							'data-foogallery-preview'         => 'shortcode'
+						)
+					),
+					array(
 						'id'      => 'thumbnail_link',
-						'title'   => __( 'Link To', 'foogallery' ),
+						'title'   => __( 'Thumbnail Link', 'foogallery' ),
 						'section' => __( 'General', 'foogallery' ),
 						'default' => 'image',
 						'type'    => 'thumb_link',
@@ -139,15 +182,6 @@ if ( ! class_exists( 'FooGallery_Default_Gallery_Template' ) ) {
 			);
 
 			return $gallery_templates;
-		}
-
-		/**
-		 * Enqueue scripts that the default gallery template relies on
-		 */
-		function enqueue_dependencies( $gallery ) {
-			//enqueue core files
-			foogallery_enqueue_core_gallery_template_style();
-			foogallery_enqueue_core_gallery_template_script();
 		}
 
 		/**

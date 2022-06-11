@@ -18,14 +18,13 @@ class Loco_gettext_WordCount implements Countable {
     private $sw;
 
 
-
     /**
      * Create counter for a pre-parsed PO/POT file.
+     * @param Loco_gettext_Data
      */
     public function __construct( Loco_gettext_Data $po ){
         $this->po = $po;
     }
-
 
 
     /**
@@ -40,11 +39,11 @@ class Loco_gettext_WordCount implements Countable {
     }
 
 
-
     /**
      * Default count function returns source words (msgid) in current file.
      * @return int
      */
+    #[ReturnTypeWillChange]
     public function count(){
         $n = $this->sw;
         if( is_null($n) ){
@@ -53,7 +52,6 @@ class Loco_gettext_WordCount implements Countable {
         }
         return $n;
     }
-
 
 
     /**

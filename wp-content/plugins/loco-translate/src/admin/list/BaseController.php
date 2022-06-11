@@ -4,38 +4,33 @@
  */
 abstract class Loco_admin_list_BaseController extends Loco_mvc_AdminController {
     
-    private $bundles = array();
+    private $bundles = [];
 
 
     /**
-     * build renderable bundle variables
+     * Build renderable bundle variables
+     * @param Loco_package_Bundle
      * @return Loco_mvc_ViewParams
      */
     protected function bundleParam( Loco_package_Bundle $bundle ){
         $handle = $bundle->getHandle();
-        // compatibility will be 'ok', 'warn' or 'error' depending on severity
-        if( $default = $bundle->getDefaultProject() ){
-            $compat = $default->getPot() instanceof Loco_fs_File;
-        }
-        else {
-            $compat = false;
-        }
-        //$info = $bundle->getHeaderInfo();
-        return new Loco_mvc_ViewParams( array (
+        $default = $bundle->getDefaultProject();
+        return new Loco_mvc_ViewParams(  [
             'id'   => $bundle->getId(),
             'name' => $bundle->getName(),
             'dflt' => $default ? $default->getDomain() : '--',
             'size' => count( $bundle ),
             'save' => $bundle->isConfigured(),
             'type' => $type = strtolower( $bundle->getType() ),
-            'view' => Loco_mvc_AdminRouter::generate( $type.'-view', array( 'bundle' => $handle ) ),
+            'view' => Loco_mvc_AdminRouter::generate( $type.'-view', [ 'bundle' => $handle ] ),
             'time' => $bundle->getLastUpdated(),
-        ) );
+        ] );
     }
     
 
     /**
      * Add bundle to enabled or disabled list, depending on whether it is configured
+     * @param Loco_package_Bundle
      */
     protected function addBundle( Loco_package_Bundle $bundle ){
         $this->bundles[] = $this->bundleParam($bundle);
@@ -46,9 +41,9 @@ abstract class Loco_admin_list_BaseController extends Loco_mvc_AdminController {
      * {@inheritdoc}
      */
     public function getHelpTabs(){
-        return array (
+        return  [
             __('Overview','default') => $this->viewSnippet('tab-list-bundles'),
-        );
+        ];
     }
 
 
@@ -58,9 +53,9 @@ abstract class Loco_admin_list_BaseController extends Loco_mvc_AdminController {
     public function render(){
 
         // breadcrumb is just the root
-        $here = new Loco_admin_Navigation( array (
-            new Loco_mvc_ViewParams( array( 'name' => $this->get('title') ) ),
-        ) );
+        $here = new Loco_admin_Navigation(  [
+            new Loco_mvc_ViewParams( [ 'name' => $this->get('title') ] ),
+        ] );
         
         /*/ tab between the types of bundles
         $types = array (
@@ -76,10 +71,10 @@ abstract class Loco_admin_list_BaseController extends Loco_mvc_AdminController {
         }
         */
         
-        return $this->view( 'admin/list/bundles', array (
+        return $this->view( 'admin/list/bundles',  [
             'bundles' => $this->bundles,
             'breadcrumb' => $here,
-        ) );
+        ] );
     }
 
     

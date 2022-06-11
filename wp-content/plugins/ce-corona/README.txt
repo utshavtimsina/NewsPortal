@@ -3,9 +3,9 @@ Contributors: priyomukul, CoderExpert
 Donate link: https://mukul.me
 Tags: corona, coronavirus, covid19
 Requires at least: 3.5
-Tested up to: 5.4
+Tested up to: 5.7
 Requires PHP: 5.6
-Stable tag: 0.6.2
+Stable tag: 0.7.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -13,10 +13,10 @@ License URI: https://www.gnu.org/licenses/gpl-2.0.html
 Coronavirus disease (COVID-19) is an infectious disease caused by a new virus.
 According to WHO( World Health Organization ), This disease causes respiratory illness (like the flu) with symptoms such as a cough, fever, and in more severe cases, difficulty breathing. You can protect yourself by washing your hands frequently, avoiding touching your face, and avoiding close contact (1 meter or 3 feet) with people who are unwell.
 
-This plugin displays the Coronavirus ( Covid19 ) case data of the whole world and country you care through a shortcode [ce_corona] in your WordPress post or page. You can use this shortcode with some attributes also. For example: [ce_corona data_table=true now=true compareCountry=true]. If data_table is set to false, now and 'compareCountry' will be false automatically. 
+This plugin displays the Coronavirus ( Covid19 ) case data of the whole world and country you care through a shortcode [ce_corona] in your WordPress post or page. You can use this shortcode with some attributes also. For example: [ce_corona data_table=true now=true compareCountry=true]. If data_table is set to false, now and 'compareCountry' will be false automatically.
 
 ## Again, How to use it ##
-You can use this plugin via a shortcode with some attributes. 
+You can use this plugin via a shortcode with some attributes.
 ### For Example ###
 `[ce_corona], [ce_corona data_table=false], [ce_corona compareCountry=false]`
 
@@ -28,7 +28,7 @@ OR
 
 `[cec_corona], [cec_corona country_code=US], [cec_corona country_code=US states=true]`
 
-OR 
+OR
 
 `[cec_graph], [cec_graph data="us,it,bd"]`
 
@@ -57,7 +57,7 @@ Feel free to suggest if you have any suggestions, regarding plugin or it's use c
 
 = Modern Way: =
 1. Go to the WordPress Dashboard "Add New Plugin" section.
-2. Search For "Corona". 
+2. Search For "Corona".
 3. Install, then Activate it.
 
 = Old Way: =
@@ -80,6 +80,12 @@ Yes, it will work with any standard WordPress Theme.
 6. Country-wise compares for a specific date.
 
 == Changelog ==
+
+= 0.7.0 =
+* Fixed: API issue.
+
+= 0.6.3 =
+* Fixed: CORS issue.
 
 = 0.6.2 =
 * Fixed: Coutry-wise Data - Shortcode, States for US.

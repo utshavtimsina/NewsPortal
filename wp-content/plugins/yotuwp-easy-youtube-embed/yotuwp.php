@@ -3,7 +3,7 @@
 * Plugin Name: YotuWP - YouTube Gallery
 * Plugin URI: https://www.yotuwp.com/
 * Description: Easy embed YouTube playlist, channel, videos and user videos to posts/pages/widgets
-* Version: 1.3.4
+* Version: 1.3.4.5
 * Text Domain: yotuwp-easy-youtube-embed
 * Domain Path: /languages
 * Author URI: https://www.yotuwp.com/contact/
@@ -17,7 +17,7 @@ if( !defined( 'YTDS' ) )
 	define( 'YTDS', DIRECTORY_SEPARATOR );
 
 if( !defined( 'YOTUWP_VERSION' ) )
-	define( 'YOTUWP_VERSION', '1.3.4' );
+	define( 'YOTUWP_VERSION', '1.3.4.5' );
 
 global $yotuwp, $yotuwp_inline_script;
 
@@ -634,8 +634,8 @@ class YotuWP{
 
 	public function search() {
 
-		$type = $_POST['type'];
-		$data = $_POST['data'];
+		$type = sanitize_text_field( $_POST['type'] );
+		$data = sanitize_text_field( $_POST['data'] );
 
 		switch ( $type) {
 			case 'playlist':
@@ -670,8 +670,9 @@ class YotuWP{
 
 	public function load_more() {
 
-		$page = $_POST['page'];
-		$atts = json_decode(base64_decode( $_POST['settings'] ), true);
+		$page = sanitize_text_field( $_POST['page'] );
+		$settings_data = isset($_POST['settings'])? sanitize_textarea_field( $_POST['settings'] ) : '[]';
+		$atts = json_decode( urldecode( base64_decode( $settings_data )), true);
 		
 		switch ( $page) {
 			
@@ -685,7 +686,7 @@ class YotuWP{
 				break;
 		}
 
-		$data     	= $this->prepare( $atts);
+		$data     	= $this->prepare( $atts );
 		$atts_tmp 	= $atts;
 
 		$items 		= ( !is_array( $data) )? $data->items : array();
@@ -723,17 +724,20 @@ class YotuWP{
 	}
 
 	public function load_thumbs() {
-
-		$atts        = json_decode(base64_decode( $_POST['settings'] ), true);
-		$atts['pageToken'] = (isset( $_POST['token'] ) && $_POST['token'] != '' )? $_POST['token'] : $atts['next'];
+		
+		$settings_data = isset($_POST['settings'])? sanitize_textarea_field( $_POST['settings'] ) : '[]';
+		$atts        = json_decode( urldecode(base64_decode( $settings_data )), true);
+		$atts['pageToken'] = (isset( $_POST['token'] ) && $_POST['token'] != '' )? sanitize_text_field( $_POST['token'] ) : $atts['next'];
 		$data        = $this->prepare( $atts);
 		$data        = apply_filters( 'yotuwp_data', $data, array() );
 		$token       = '';
 		$thumb_type  = $this->get_thumb_type( $atts['column'] );
 
 		if( !is_array( $data) ) {
+
 			$token = $data->nextPageToken;
 			$items = $data->items;
+
 		} else $items = array();
 
 		$filtered = array();
@@ -744,12 +748,12 @@ class YotuWP{
 
 			$filtered[] = array(
 				'thumb'   => $video->snippet->thumbnails->$thumb_type->url,
-				'title'   => base64_encode( $video->snippet->title),
-				'videoId' => $this->getVideoId( $video)
+				'title'   => base64_encode( $video->snippet->title ),
+				'videoId' => $this->getVideoId( $video )
 			);
 		}
 
-		wp_send_json(array( 'items' => $filtered, 'token' => $token) );
+		wp_send_json( array( 'items' => $filtered, 'token' => $token) );
 	}
 
 	public static function getVideoId( $video) {

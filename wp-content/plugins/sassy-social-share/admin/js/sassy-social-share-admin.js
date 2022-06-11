@@ -4,10 +4,8 @@ jQuery(document).ready(function() {
     if(heateorSssReferrerTabId){heateorSssSetReferrer(heateorSssReferrerTabId) }
     jQuery("#tabs").tabs(), jQuery("#heateor_sss_login_redirection_column").find("input[type=radio]").click(function() {
         jQuery(this).attr("id") && "heateor_sss_login_redirection_custom" == jQuery(this).attr("id") ? jQuery("#heateor_sss_login_redirection_url").css("display", "block") : jQuery("#heateor_sss_login_redirection_url").css("display", "none")
-    }), jQuery(".heateor_sss_help_bubble").attr("title", heateorSssHelpBubbleTitle), jQuery(".heateor_sss_help_bubble").toggle(function() {
-        jQuery("#" + jQuery(this).attr("id") + "_cont").show(), jQuery(this).attr("title", heateorSssHelpBubbleCollapseTitle)
-    }, function() {
-        jQuery("#" + jQuery(this).attr("id") + "_cont").hide(), jQuery(this).attr("title", heateorSssHelpBubbleTitle)
+    }), jQuery(".heateor_sss_help_bubble").attr("title", heateorSssHelpBubbleTitle), jQuery(".heateor_sss_help_bubble").click(function() {
+        jQuery("#" + jQuery(this).attr("id") + "_cont").toggle(500)
     })
     jQuery('#tabs ul a').click(function(){
     	heateorSssSetReferrer(jQuery(this).attr('href'));

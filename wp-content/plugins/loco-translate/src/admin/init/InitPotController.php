@@ -21,9 +21,9 @@ class Loco_admin_init_InitPotController extends Loco_admin_bundle_BaseController
      * {@inheritdoc}
      */
     public function getHelpTabs(){
-        return array (
+        return  [
             __('Overview','default') => $this->viewSnippet('tab-init-pot'),
-        );
+        ];
     }
     
     
@@ -51,17 +51,6 @@ class Loco_admin_init_InitPotController extends Loco_admin_bundle_BaseController
         
         // Establish default POT path whether it exists or not
         $pot = $project->getPot();
-        while( ! $pot ){
-            $name = ( $slug ? $slug : $domain ).'.pot';
-            /* @var $dir Loco_fs_Directory */
-            foreach( $project->getConfiguredTargets() as $dir ){
-                $pot = new Loco_fs_File( $dir->getPath().'/'.$name );
-                break 2;
-            }
-            // unlikely to have no configured targets, but possible ... so default to standard
-            $pot = new Loco_fs_File( $bundle->getDirectoryPath().'/languages/'.$name );
-            break;
-        }
         
         // POT should actually not exist at this stage. It should be edited instead.
         if( $pot->exists() ){
@@ -100,14 +89,14 @@ class Loco_admin_init_InitPotController extends Loco_admin_bundle_BaseController
                 $bytes += $fsize;
             }
         }
-        $this->set( 'scan', new Loco_mvc_ViewParams( array (
+        $this->set( 'scan', new Loco_mvc_ViewParams(  [
             'bytes' => $bytes,
             'count' => $nfiles,
             'skip' => $nskip,
             'size' => Loco_mvc_FileParams::renderBytes($bytes),
             'large' => Loco_mvc_FileParams::renderBytes($max),
             'largest' => Loco_mvc_FileParams::renderBytes($largest),
-        ) ) );
+        ] ) );
         
         // file metadata
         $this->set('pot', Loco_mvc_FileParams::create( $pot ) );
@@ -126,7 +115,7 @@ class Loco_admin_init_InitPotController extends Loco_admin_bundle_BaseController
         $target_path = $pot->getParent()->getRelativePath($content_dir);
 
         // hidden fields to pass through to Ajax endpoint
-        $this->set( 'hidden', new Loco_mvc_ViewParams( array(
+        $this->set( 'hidden', new Loco_mvc_ViewParams( [
             'action' => 'loco_json',
             'route' => 'xgettext',
             'loco-nonce' => $this->setNonce('xgettext')->value,
@@ -135,7 +124,7 @@ class Loco_admin_init_InitPotController extends Loco_admin_bundle_BaseController
             'domain' => $project->getId(),
             'path' => $target_path,
             'name' => $pot->basename(),
-        ) ) );
+        ] ) );
 
         // File system connect required if location not writable
         $relpath = $pot->getRelativePath($content_dir);

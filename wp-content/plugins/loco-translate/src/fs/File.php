@@ -72,7 +72,7 @@ class Loco_fs_File {
     /**
      * Internally set path value and flag whether relative or absolute
      * @param string
-     * @return string
+     * @return void
      */
     private function setPath( $path ){
         $path = (string) $path;
@@ -87,7 +87,6 @@ class Loco_fs_File {
             $this->path = $path;
             $this->info = null;
         }
-        return $path;
     }
 
 
@@ -109,15 +108,14 @@ class Loco_fs_File {
 
     /**
      * Copy write context with our file reference
-     * @param Loco_fs_FileWriter 
-     * @return Loco_fs_File
+     * @param Loco_fs_FileWriter|null
+     * @return void
      */
     private function cloneWriteContext( Loco_fs_FileWriter $context = null ){
         if( $context ){
             $context = clone $context;
             $this->w = $context->setFile($this);
         }
-        return $this;
     }
 
 
@@ -170,7 +168,7 @@ class Loco_fs_File {
                 if( $writer->isDirect() && ( $uid = Loco_compat_PosixExtension::getuid() ) ){
                     return $uid === $this->uid() || $uid === $parent->uid();
                 }
-                // else delete operation won't be done directly, so can't pre-empt sticky problems
+                // else delete operation won't be done directly, so can't preempt sticky problems
                 // TODO is it worth comparing FTP username etc.. for ownership?
             }
             // defaulting to "deletable" based on fact that parent is writable.
@@ -199,7 +197,7 @@ class Loco_fs_File {
 
 
     /**
-     * Check if file can't be overwitten when existent, nor created when non-existent
+     * Check if file can't be overwritten when existent, nor created when non-existent
      * This does not check permissions recursively as directory trees are not built implicitly
      * @return bool
      */
@@ -255,8 +253,9 @@ class Loco_fs_File {
         return $info['filename'];
     }
 
-    
+
     /**
+     * Gets final file extension, e.g. "html" in "foo.php.html"
      * @return string
      */
     public function extension(){
@@ -264,7 +263,17 @@ class Loco_fs_File {
         return isset($info['extension']) ? $info['extension'] : '';
     }
 
-    
+
+    /**
+     * Gets full file extension after first dot ("."), e.g. "php.html" in "foo.php.html"
+     * @return string
+     */
+    public function fullExtension(){
+        $bits = explode('.',$this->basename(),2);
+        return array_key_exists(1,$bits) ? $bits[1] : '';
+    }
+
+
     /**
      * @return string
      */
@@ -370,10 +379,10 @@ class Loco_fs_File {
             }
             else {
                 if( ! $this->rel || ! $base ){
-                    $b = array();
+                    $b = [];
                 }
                 else {
-                    $b = self::explode( $base, array() );
+                    $b = self::explode( $base, [] );
                 }
                 $b = self::explode( $path, $b );
                 $this->setPath( implode('/',$b) );
@@ -418,7 +427,7 @@ class Loco_fs_File {
      */
     public function getRelativePath( $base ){
         $path = $this->normalize();
-        if( $abspath = self::abs($path) ){
+        if( self::abs($path) ){
             // base may needs require normalizing
             $file = new Loco_fs_File($base);
             $base = $file->normalize();
@@ -457,7 +466,7 @@ class Loco_fs_File {
         if( file_exists($this->path) ){
             return is_dir($this->path);
         }
-        return ! $this->extension();
+        return '' === $this->extension();
     }
 
 
@@ -572,31 +581,53 @@ class Loco_fs_File {
     /**
      * Copy this object with an alternative file extension
      * @param string new extension
-     * @return Loco_fs_File
+     * @return self
      */
     public function cloneExtension( $ext ){
-        $snip = strlen( $this->extension() );
+        $name = $this->filename().'.'.$ext;
+        return $this->cloneBasename($name);
+    }
+
+
+    /**
+     * Copy this object with an alternative name under the same directory
+     * @param string new name
+     * @return self
+     */
+    public function cloneBasename( $name ){
         $file = clone $this;
-        if( $snip ){
-            $file->path = substr_replace( $this->path, $ext, - $snip );
-        }
-        else {
-            $file->path .= '.'.$ext;
-        }
+        $file->path = rtrim($file->dirname(),'/').'/'.$name;
         $file->info = null;
         return $file;
     }
 
 
     /**
+     * Copy this object as a WordPress script translation file
+     * @param string relative path to .js file presumed to exist
+     * @return self
+     */
+    public function cloneJson( $ref ){
+        $name = $this->filename();
+        if( is_string($ref) && '' !== $ref ){
+            // Hashable reference is always finally unminified, as per load_script_textdomain()
+            if( substr($ref,-7) === '.min.js' ) {
+                $ref = substr($ref,0,-7).'.js';
+            }
+            $name .= '-'.md5($ref);
+        }
+        return $this->cloneBasename( $name.'.json' );
+    }
+
+
+    /**
      * Ensure full parent directory tree exists
-     * @return Loco_fs_Directory
+     * @return Loco_fs_Directory|null
      */
     public function createParent(){
-        if( $dir = $this->getParent() ){
-            if( ! $dir->exists() ){
-                $dir->mkdir();
-            }
+        $dir = $this->getParent();
+        if( $dir instanceof Loco_fs_Directory && ! $dir->exists() ){
+            $dir->mkdir();
         }
         return $dir;
     }
@@ -621,7 +652,8 @@ class Loco_fs_File {
     public function getUpdateType(){
         // global languages directory root, and canonical subdirectories
         $dirpath = (string) ( $this->isDirectory() ? $this : $this->getParent() );
-        if( $sub = Loco_fs_Locations::getGlobal()->rel($dirpath) ){
+        $sub = Loco_fs_Locations::getGlobal()->rel($dirpath);
+        if( is_string($sub) && '' !== $sub ){
             list($root) = explode('/', $sub, 2 );
             if( '.' === $root || 'themes' === $root || 'plugins' === $root ){
                 return 'translation';
@@ -641,5 +673,19 @@ class Loco_fs_File {
         // else not an update type
         return '';
     }
-    
+
+
+    /**
+     * Get MD5 hash of file contents
+     * @return string
+     */
+    public function md5(){
+        if( $this->exists() ) {
+            return md5_file( $this->path );
+        }
+        else {
+            return 'd41d8cd98f00b204e9800998ecf8427e';
+        }
+    } 
+
 }

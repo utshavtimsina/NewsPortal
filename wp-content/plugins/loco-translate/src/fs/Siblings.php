@@ -39,9 +39,9 @@ class Loco_fs_Siblings {
      * @return Loco_fs_File[]
      */
     public function expand(){
-        $siblings = array();
+        $siblings = [];
         // Source and binary pair
-        foreach( array( $this->po, $this->mo ) as $file ){
+        foreach( [ $this->po, $this->mo ] as $file ){
             if( $file && $file->exists() ){
                 $siblings[] = $file;
             }
@@ -53,18 +53,7 @@ class Loco_fs_Siblings {
         }
         // JSON exports, unless in POT mode:
         if( 'po' === $this->po->extension() ){
-            $name = $this->po->filename();
-            $finder = new Loco_fs_FileFinder( $this->po->dirname() );
-            $regex = '/^'.preg_quote($name,'/').'-[0-9a-f]{32}$/';
-            /* @var $file Loco_fs_File */
-            foreach( $finder->group('json')->exportGroups() as $files ) {
-                foreach( $files as $file ){
-                    $match = $file->filename();
-                    if( $match === $name || preg_match($regex,$match) ) {
-                        $siblings[] = $file;
-                    }
-                }
-            }
+            $siblings = array_merge($siblings,$this->getJsons());
         }
 
         return $siblings;
@@ -84,6 +73,34 @@ class Loco_fs_Siblings {
      */
     public function getBinary(){
         return $this->mo;
+    }
+
+    
+    /**
+     * @return Loco_fs_File[]
+     */
+    public function getJsons(){
+        $list = new Loco_fs_FileList;
+        $name = $this->po->filename();
+        $finder = new Loco_fs_FileFinder( $this->po->dirname() );
+        // match .json files with same name as .po, plus hashed names
+        $regex = '/^'.preg_quote($name,'/').'-[0-9a-f]{32}$/';
+        /* @var Loco_fs_File $file */
+        foreach( $finder->group('json')->exportGroups() as $files ) {
+            foreach( $files as $file ){
+                $match = $file->filename();
+                if( $match === $name || preg_match($regex,$match) ) {
+                    $list->add($file);
+                }
+            }
+        }
+        // append single json using our filter
+        $path = apply_filters('loco_compile_single_json', '', $this->po->getPath() );
+        if( is_string($path) && '' !== $path && file_exists($path) ){
+            $list->add( new Loco_fs_File($path) );
+        }
+
+        return $list->getArrayCopy();
     }
 
 }

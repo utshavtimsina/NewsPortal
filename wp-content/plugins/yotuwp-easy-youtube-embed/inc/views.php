@@ -439,7 +439,7 @@ class YotuViews{
 
 		foreach ( $this->sections as $tab => $section ) {
 			foreach( $section['fields'] as $ind => $field ) {
-				$field_name = $field['name'];
+				$field_name = isset($field['name'])? $field['name'] : '';
 				if( 
 					isset( $data[ $tab ]) &&
 					isset( $data[ $tab ][ $field_name ])
@@ -488,7 +488,7 @@ class YotuViews{
 						'label'			=> __('Enable Tracking?', 'yotuwp-easy-youtube-embed'),
 						'default'		=> 'off',
 						'priority' 		=> 60,
-						'value'			=> ($allow_tracking)? 'on' : 'off',
+						'value'			=> (false !== $allow_tracking)? 'on' : 'off',
 						'description'	=> __('Allow <strong>YotuWP - YouTube Gallery</strong> to track plugin usage? Become a contributor by opting in to our anonymous data tracking. We guarantee no sensitive data is collected.', 'yotuwp-easy-youtube-embed'),
 					),
 				)

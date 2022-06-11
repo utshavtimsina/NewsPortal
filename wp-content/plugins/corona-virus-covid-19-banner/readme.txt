@@ -2,9 +2,9 @@
 Contributors: ntomkin, orchestrated
 Tags: wordpress, plugin, corona, virus, coronavirus, covid-19, covid, banner, live data, corona virus, notice
 Requires at least: 5.1
-Tested up to: 5.4
-Requires PHP: 5.3
-Stable tag: 1.7.0.4
+Tested up to: 5.8
+Requires PHP: 7.4
+Stable tag: 1.7.0.6
 License: GPLv2 or later
 License URI: http://www.gnu.org/licenses/gpl-2.0.html
 
@@ -110,3 +110,11 @@ We're a digital agency – so we too understand how annoying it is to find the p
 = 1.7.0.4 =
 * 2020-05-02
 * Fixed bug when displaying World data
+
+= 1.7.0.5 =
+* 2021-02-03
+* Updated supported version
+
+= 1.7.0.6 =
+* 2021-08-31
+* Updated compatibility

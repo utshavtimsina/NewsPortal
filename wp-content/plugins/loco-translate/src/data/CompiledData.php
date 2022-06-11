@@ -22,6 +22,7 @@ class Loco_data_CompiledData implements ArrayAccess, Countable, IteratorAggregat
 
     
     /**
+     * @param string
      * @return Loco_data_CompiledData
      */
     public static function get( $name ){
@@ -44,25 +45,30 @@ class Loco_data_CompiledData implements ArrayAccess, Countable, IteratorAggregat
     }
 
 
+    #[ReturnTypeWillChange]
     public function offsetGet( $k ){
         return isset($this->data[$k]) ? $this->data[$k] : null;
     }
-    
-    
+
+
+    #[ReturnTypeWillChange]
     public function offsetExists( $k ){
         return isset($this->data[$k]);
     }
 
 
+    #[ReturnTypeWillChange]
     public function offsetUnset( $k ){
         throw new RuntimeException('Read only');
     }
-    
-    
+
+
+    #[ReturnTypeWillChange]
     public function offsetSet( $k, $v ){
         throw new RuntimeException('Read only');
     }
 
+    #[ReturnTypeWillChange]
     public function count(){
         return count($this->data);
     }
@@ -71,7 +77,9 @@ class Loco_data_CompiledData implements ArrayAccess, Countable, IteratorAggregat
      * Implements IteratorAggregate::getIterator
      * @return ArrayIterator
      */
+    #[ReturnTypeWillChange]
     public function getIterator(){
         return new ArrayIterator( $this->data );
     }
+
 }

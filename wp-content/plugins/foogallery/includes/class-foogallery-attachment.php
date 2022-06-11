@@ -26,6 +26,7 @@ if ( ! class_exists( 'FooGalleryAttachment' ) ) {
 		private function set_defaults() {
 			$this->_post = null;
 			$this->ID = 0;
+			$this->type = 'image'; // set the default type to image.
 			$this->title = '';
 			$this->caption = '';
 			$this->description = '';
@@ -45,19 +46,23 @@ if ( ! class_exists( 'FooGalleryAttachment' ) ) {
 			$this->_post = $post;
 			$this->ID = $post->ID;
 			$this->title = trim( $post->post_title );
-			$this->caption = foogallery_get_caption_title_for_attachment( $post );
-			$this->description = foogallery_get_caption_desc_for_attachment( $post );
+			$this->caption = trim( $post->post_excerpt );
+			$this->description = trim( $post->post_content );
 			$this->alt = trim( get_post_meta( $this->ID, '_wp_attachment_image_alt', true ) );
 			$this->custom_url = get_post_meta( $this->ID, '_foogallery_custom_url', true );
 			$this->custom_target = get_post_meta( $this->ID, '_foogallery_custom_target', true );
-			$image_attributes = wp_get_attachment_image_src( $this->ID, 'full' );
+			$this->load_attachment_image_data( $this->ID );
+
+			do_action( 'foogallery_attachment_instance_after_load', $this, $post );
+		}
+
+		public function load_attachment_image_data( $attachment_id ) {
+			$image_attributes = foogallery_get_full_size_image_data( $attachment_id );
 			if ( $image_attributes ) {
 				$this->url = $image_attributes[0];
 				$this->width = $image_attributes[1];
 				$this->height = $image_attributes[2];
 			}
-
-			do_action( 'foogallery_attachment_instance_after_load', $this, $post );
 		}
 
 		/**
@@ -92,7 +97,7 @@ if ( ! class_exists( 'FooGalleryAttachment' ) ) {
 		 * @return string
 		 */
 		public function html_img_src( $args = array() ) {
-			return apply_filters( 'foogallery_attachment_resize_thumbnail', $this->url, $args, $this );
+			return esc_url( apply_filters( 'foogallery_attachment_resize_thumbnail', $this->url, $args, $this ) );
 		}
 
 		/**

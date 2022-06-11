@@ -141,6 +141,7 @@ class CoronaElementor extends Widget_Base {
                     'casesPerOneMillion'  => __( 'Cases/1M', 'ce-corona' ),
                     'deathsPerOneMillion' => __( 'Deaths/1M', 'ce-corona' ),
                     'testsPerOneMillion'  => __( 'Tests/1M', 'ce-corona' ),
+                    'population'          => __( 'Population', 'ce-corona' ),
                 ],
                 'default' => [
                     'cases',
@@ -158,7 +159,7 @@ class CoronaElementor extends Widget_Base {
                 ]
 			]
         );
-        
+
         $this->add_control(
 			'cec_compareCountry',
 			[
@@ -177,7 +178,7 @@ class CoronaElementor extends Widget_Base {
 				'default' => 'yes',
 			]
         );
-        
+
         $this->add_control(
 			'cec_button_position',
 			[
@@ -192,7 +193,7 @@ class CoronaElementor extends Widget_Base {
         );
 
         $this->end_controls_section();
-        
+
 		$this->start_controls_section(
 			'cec_corona_content_settings',
 			[
@@ -208,7 +209,7 @@ class CoronaElementor extends Widget_Base {
 				'default'     => __( 'Total Stats', 'ce-corona' ),
 			]
 		);
-        
+
         // $this->add_control(
 		// 	'cec_select_stats_fields',
 		// 	[
@@ -281,7 +282,7 @@ class CoronaElementor extends Widget_Base {
                 ]
 			]
         );
-        
+
         $this->add_control(
 			'cec_stats_compare_btn_text',
 			[
@@ -302,7 +303,7 @@ class CoronaElementor extends Widget_Base {
         //         'default'     => __( 'Total Cases', 'ce-corona' ),
 		// 	]
         // );
-        
+
         // $this->add_control(
 		// 	'cec_stats_title_recovered',
 		// 	[
@@ -311,7 +312,7 @@ class CoronaElementor extends Widget_Base {
         //         'default'     => __( 'Total Recovered', 'ce-corona' ),
 		// 	]
         // );
-        
+
         // $this->add_control(
 		// 	'cec_stats_title_deaths',
 		// 	[
@@ -551,7 +552,7 @@ class CoronaElementor extends Widget_Base {
 
         $this->start_controls_tabs('cec_compare_btn_tabs');; // Tabs Start
         $this->start_controls_tab('cec_compare_btn_tabs_normal', [ 'label' => __( 'Normal', 'ce-corona' ) ]);
-        
+
         $this->add_control(
             'cec_com_btn_bg_color',
             [
@@ -643,7 +644,7 @@ class CoronaElementor extends Widget_Base {
 
         $this->end_controls_tab(); // hover end
         $this->end_controls_tabs(); // Tabs End
-    
+
         $this->end_controls_section();
 
         $this->start_controls_section(
@@ -1102,77 +1103,77 @@ class CoronaElementor extends Widget_Base {
 	protected function render() {
         $settings = $this->get_settings_for_display();
         $this->add_render_attribute('cec-elementor', 'class', 'cec-elementor');
-        $this->add_render_attribute('cec-elementor', 'global_data', 
-            isset( $settings['cec_total_stats'] ) ? ! empty( $settings['cec_total_stats'] ) ? $settings['cec_total_stats'] : 'no' : 'no' 
+        $this->add_render_attribute('cec-elementor', 'global_data',
+            isset( $settings['cec_total_stats'] ) ? ! empty( $settings['cec_total_stats'] ) ? $settings['cec_total_stats'] : 'no' : 'no'
         );
-        $this->add_render_attribute('cec-elementor', 'data_table', 
-            isset( $settings['cec_data_table'] ) ? ! empty( $settings['cec_data_table'] ) ? $settings['cec_data_table'] : 'no' : 'no' 
+        $this->add_render_attribute('cec-elementor', 'data_table',
+            isset( $settings['cec_data_table'] ) ? ! empty( $settings['cec_data_table'] ) ? $settings['cec_data_table'] : 'no' : 'no'
         );
-        $this->add_render_attribute('cec-elementor', 'countries', 
-            isset( $settings['cec_table_countries'] ) ? ! empty( $settings['cec_table_countries'] ) ? \implode(',', $settings['cec_table_countries'] ) : '' : '' 
+        $this->add_render_attribute('cec-elementor', 'countries',
+            isset( $settings['cec_table_countries'] ) ? ! empty( $settings['cec_table_countries'] ) ? \implode(',', $settings['cec_table_countries'] ) : '' : ''
         );
-        $this->add_render_attribute('cec-elementor', 'columns', 
-            isset( $settings['cec_table_columns'] ) ? ! empty( $settings['cec_table_columns'] ) ? \json_encode( $settings['cec_table_columns'] ) : '' : '' 
+        $this->add_render_attribute('cec-elementor', 'columns',
+            isset( $settings['cec_table_columns'] ) ? ! empty( $settings['cec_table_columns'] ) ? \json_encode( $settings['cec_table_columns'] ) : '' : ''
         );
-        $this->add_render_attribute('cec-elementor', 'btn_position', 
-            isset( $settings['cec_button_position'] ) ? ! empty( $settings['cec_button_position'] ) ? $settings['cec_button_position'] : '' : '' 
+        $this->add_render_attribute('cec-elementor', 'btn_position',
+            isset( $settings['cec_button_position'] ) ? ! empty( $settings['cec_button_position'] ) ? $settings['cec_button_position'] : '' : ''
         );
-        $this->add_render_attribute('cec-elementor', 'table_style', 
-            isset( $settings['cec_table_style'] ) ? ! empty( $settings['cec_table_style'] ) ? $settings['cec_table_style'] : 'default' : 'default' 
+        $this->add_render_attribute('cec-elementor', 'table_style',
+            isset( $settings['cec_table_style'] ) ? ! empty( $settings['cec_table_style'] ) ? $settings['cec_table_style'] : 'default' : 'default'
         );
-        $this->add_render_attribute('cec-elementor', 'lastupdate', 
-            isset( $settings['cec_last_update'] ) ? ! empty( $settings['cec_last_update'] ) ? $settings['cec_last_update'] : 'no' : 'no' 
+        $this->add_render_attribute('cec-elementor', 'lastupdate',
+            isset( $settings['cec_last_update'] ) ? ! empty( $settings['cec_last_update'] ) ? $settings['cec_last_update'] : 'no' : 'no'
         );
-        $this->add_render_attribute('cec-elementor', 'compareCountry', 
-            isset( $settings['cec_compareCountry'] ) ? ! empty( $settings['cec_compareCountry'] ) ? $settings['cec_compareCountry'] : 'no' : 'no' 
+        $this->add_render_attribute('cec-elementor', 'compareCountry',
+            isset( $settings['cec_compareCountry'] ) ? ! empty( $settings['cec_compareCountry'] ) ? $settings['cec_compareCountry'] : 'no' : 'no'
         );
-        $this->add_render_attribute('cec-elementor', 'stats_title', 
-            isset( $settings['cec_stats_title'] ) ? ! empty( $settings['cec_stats_title'] ) ? $settings['cec_stats_title'] : 'Total Stats' : 'Total Stats' 
+        $this->add_render_attribute('cec-elementor', 'stats_title',
+            isset( $settings['cec_stats_title'] ) ? ! empty( $settings['cec_stats_title'] ) ? $settings['cec_stats_title'] : 'Total Stats' : 'Total Stats'
         );
-        $this->add_render_attribute('cec-elementor', 'compare_text', 
-            isset( $settings['cec_stats_compare_btn_text'] ) ? ! empty( $settings['cec_stats_compare_btn_text'] ) ? $settings['cec_stats_compare_btn_text'] : 'Total Stats' : 'Total Stats' 
+        $this->add_render_attribute('cec-elementor', 'compare_text',
+            isset( $settings['cec_stats_compare_btn_text'] ) ? ! empty( $settings['cec_stats_compare_btn_text'] ) ? $settings['cec_stats_compare_btn_text'] : 'Total Stats' : 'Total Stats'
         );
-        $this->add_render_attribute('cec-elementor', 'recent_text', 
-            isset( $settings['cec_stats_recent_btn_text'] ) ? ! empty( $settings['cec_stats_recent_btn_text'] ) ? $settings['cec_stats_recent_btn_text'] : 'Total Stats' : 'Total Stats' 
+        $this->add_render_attribute('cec-elementor', 'recent_text',
+            isset( $settings['cec_stats_recent_btn_text'] ) ? ! empty( $settings['cec_stats_recent_btn_text'] ) ? $settings['cec_stats_recent_btn_text'] : 'Total Stats' : 'Total Stats'
         );
-        // $this->add_render_attribute('cec-elementor', 'stats_fields', 
-        //     isset( $settings['cec_select_stats_fields'] ) ? ! empty( $settings['cec_select_stats_fields'] ) ? implode( ',', $settings['cec_select_stats_fields'] ) : 'all' : 'all' 
+        // $this->add_render_attribute('cec-elementor', 'stats_fields',
+        //     isset( $settings['cec_select_stats_fields'] ) ? ! empty( $settings['cec_select_stats_fields'] ) ? implode( ',', $settings['cec_select_stats_fields'] ) : 'all' : 'all'
         // );
-        $this->add_render_attribute('cec-elementor', 'affected_title', 
-            isset( $settings['cec_stats_affected_title'] ) ? 
-            ! empty( $settings['cec_stats_affected_title'] ) ? $settings['cec_stats_affected_title'] 
-            : '' : __( 'Affected Countries', 'ce-corona' ) 
+        $this->add_render_attribute('cec-elementor', 'affected_title',
+            isset( $settings['cec_stats_affected_title'] ) ?
+            ! empty( $settings['cec_stats_affected_title'] ) ? $settings['cec_stats_affected_title']
+            : '' : __( 'Affected Countries', 'ce-corona' )
         );
 
-        $this->add_render_attribute('cec-elementor', 'active_title', 
-            isset( $settings['cec_stats_active_title'] ) ? 
-            ! empty( $settings['cec_stats_active_title'] ) ? $settings['cec_stats_active_title'] 
-            : '' : __( 'Active Cases', 'ce-corona' ) 
+        $this->add_render_attribute('cec-elementor', 'active_title',
+            isset( $settings['cec_stats_active_title'] ) ?
+            ! empty( $settings['cec_stats_active_title'] ) ? $settings['cec_stats_active_title']
+            : '' : __( 'Active Cases', 'ce-corona' )
         );
 
-        $this->add_render_attribute('cec-elementor', 'deaths_title', 
-            isset( $settings['cec_stats_deaths_title'] ) ? 
-            ! empty( $settings['cec_stats_deaths_title'] ) ? $settings['cec_stats_deaths_title'] 
-            : '' : __( 'Total Deaths', 'ce-corona' ) 
+        $this->add_render_attribute('cec-elementor', 'deaths_title',
+            isset( $settings['cec_stats_deaths_title'] ) ?
+            ! empty( $settings['cec_stats_deaths_title'] ) ? $settings['cec_stats_deaths_title']
+            : '' : __( 'Total Deaths', 'ce-corona' )
         );
 
-        $this->add_render_attribute('cec-elementor', 'recovered_title', 
-            isset( $settings['cec_stats_recovered_title'] ) ? 
-            ! empty( $settings['cec_stats_recovered_title'] ) ? $settings['cec_stats_recovered_title'] 
-            : '' : __( 'Total Recovered', 'ce-corona' ) 
+        $this->add_render_attribute('cec-elementor', 'recovered_title',
+            isset( $settings['cec_stats_recovered_title'] ) ?
+            ! empty( $settings['cec_stats_recovered_title'] ) ? $settings['cec_stats_recovered_title']
+            : '' : __( 'Total Recovered', 'ce-corona' )
         );
 
-        $this->add_render_attribute('cec-elementor', 'confirmed_title', 
-            isset( $settings['cec_stats_cases_title'] ) ? 
-            ! empty( $settings['cec_stats_cases_title'] ) ? $settings['cec_stats_cases_title'] 
-            : '' : __( 'Total Cases', 'ce-corona' ) 
+        $this->add_render_attribute('cec-elementor', 'confirmed_title',
+            isset( $settings['cec_stats_cases_title'] ) ?
+            ! empty( $settings['cec_stats_cases_title'] ) ? $settings['cec_stats_cases_title']
+            : '' : __( 'Total Cases', 'ce-corona' )
         );
 
 		echo '<div '.  $this->get_render_attribute_string('cec-elementor') .'>';
             echo '<div id="ce-elementor-corona" class="alignwide"></div>';
 		echo '</div>';
     }
-    
+
     public function countries(){
         return array(
             "AF"  => "Afghanistan",

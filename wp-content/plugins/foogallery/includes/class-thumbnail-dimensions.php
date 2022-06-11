@@ -12,8 +12,7 @@ if ( ! class_exists( 'FooGallery_Thumbnail_Dimensions' ) ) {
 
     class FooGallery_Thumbnail_Dimensions
     {
-        function __construct()
-        {
+        function __construct() {
             //hook into the filter that build up the img attributes
             // and add the width and height attributes if the gallery requires them
             add_filter( 'foogallery_attachment_html_image_attributes', array( $this, 'include_thumb_dimension_attributes' ), 10, 3 );
@@ -81,6 +80,16 @@ if ( ! class_exists( 'FooGallery_Thumbnail_Dimensions' ) ) {
                         $thumb_width = (int)$thumbnail_dimensions['width'];
                         $thumb_height = (int)$thumbnail_dimensions['height'];
                         $thumb_crop = (bool)$thumbnail_dimensions['crop'];
+
+                        //allow width and height arguments to be overridden
+                        $override_width = foogallery_gallery_template_setting( 'override_width', false );
+                        if ( $override_width !== false && intval( $override_width ) > 0 ) {
+                            $thumb_width = intval( $override_width );
+                        }
+                        $override_height = foogallery_gallery_template_setting( 'override_height', false );
+                        if ( $override_height !== false && intval( $override_height ) > 0 ) {
+                            $thumb_height = intval( $override_height );
+                        }
 
                         //set the appropriate arguments on the attachments so that they can be
                         // picked up and used in the 'include_thumb_dimension_attributes' function below

@@ -56,10 +56,10 @@ class Loco_gettext_Metadata extends Loco_data_Transient {
     public static function load( Loco_fs_File $po, $nocache = false ){
         $bytes = $po->size();
         $mtime = $po->modified();
-        // quick construct of new meta object. enough to query and validate cache 
-        $meta = new Loco_gettext_Metadata( array(
+        // quick construct of new meta object. enough to query and validate cache
+        $meta = new Loco_gettext_Metadata( [
             'rpath' => $po->getRelativePath( loco_constant('WP_CONTENT_DIR') ),
-        ) );
+        ] );
         // pull from cache if exists and has not been modified
         if( $nocache || ! $meta->fetch() || $bytes !== $meta['bytes'] || $mtime !== $meta['mtime'] ){
             // not available from cache, or cache is invalidated
@@ -95,12 +95,12 @@ class Loco_gettext_Metadata extends Loco_data_Transient {
      * @return Loco_gettext_Metadata 
      */
     public static function create( Loco_fs_File $file, Loco_gettext_Data $data ){
-        return new Loco_gettext_Metadata( array (
+        return new Loco_gettext_Metadata(  [
             'valid' => true,
             'bytes' => $file->size(),
             'mtime' => $file->modified(),
             'stats' => self::stats( $data->getArrayCopy() ),
-        ) );
+        ] );
     }
 
 
@@ -114,7 +114,7 @@ class Loco_gettext_Metadata extends Loco_data_Transient {
             return $this['stats'];
         }
         // fallback to empty stats
-        return array( 't' => 0, 'p' => 0, 'f' => 0 );
+        return [ 't' => 0, 'p' => 0, 'f' => 0 ];
     }
 
 
@@ -184,22 +184,23 @@ class Loco_gettext_Metadata extends Loco_data_Transient {
     }
 
 
-
     /**
      * Get wordy summary of total strings
+     * @return string
      */
     public function getTotalSummary(){
         $total = $this->getTotal();
-        return sprintf( _n('1 string','%s strings',$total,'loco-translate'), number_format($total) );
+        // translators: Where %s is any number of strings
+        return sprintf( _n('%s string','%s strings',$total,'loco-translate'), number_format_i18n($total) );
     }
-
 
 
     /**
      * Get wordy summary including translation stats
+     * @return string
      */
     public function getProgressSummary(){
-        $extra = array();
+        $extra = [];
         $stext = sprintf( __('%s%% translated','loco-translate'), $this->getPercent() ).', '.$this->getTotalSummary();
         if( $num = $this->countFuzzy() ){
             $extra[] = sprintf( __('%s fuzzy','loco-translate'), number_format($num) );
@@ -214,7 +215,10 @@ class Loco_gettext_Metadata extends Loco_data_Transient {
     }
 
 
-
+    /**
+     * @param bool
+     * @return string
+     */
     public function getPath( $absolute ){
         $path = $this['rpath'];
         if( $absolute && ! Loco_fs_File::abs($path) ){

@@ -1,5 +1,4 @@
 <?php
-
 /**
  * Plugin bootstrap file
  *
@@ -7,7 +6,7 @@
  * Plugin Name:       Sassy Social Share
  * Plugin URI:        https://www.heateor.com
  * Description:       Slickest, Simplest and Optimized Share buttons. Facebook, Twitter, Reddit, Pinterest, WhatsApp and over 100 more
- * Version:           3.3.10
+ * Version:           3.3.42
  * Author:            Team Heateor
  * Author URI:        https://www.heateor.com
  * Text Domain:       sassy-social-share
@@ -21,30 +20,120 @@ if ( ! defined( 'WPINC' ) ) {
 	die;
 }
 
-define( 'HEATEOR_SSS_VERSION', '3.3.10' );
+define( 'HEATEOR_SSS_VERSION', '3.3.42' );
 define( 'HEATEOR_SSS_PLUGIN_DIR', plugin_dir_path( __FILE__ ) );
 
-// plugin core class object
+// core plugin class object
 $heateor_sss = null;
 
-/**
- * Updates SVG CSS file according to chosen logo color
- */
-function heateor_sss_update_svg_css( $color_to_be_replaced, $css_file ) {
-	$path = plugin_dir_url( __FILE__ ) . 'admin/css/' . $css_file . '.css';
-	try {
-		$content = file( $path );
-		if ( $content !== false ) {
-			$handle = fopen( dirname( __FILE__ ) . '/admin/css/' . $css_file . '.css', 'w' );
-			if ( $handle !== false ) {
-				foreach ( $content as $value ) {
-				    fwrite( $handle, str_replace( '%23fff', str_replace( '#', '%23', $color_to_be_replaced ), $value ) );
-				}
-				fclose( $handle );
-			}
-		}
-	} catch ( Exception $e ) {  }
-}
+// attributes to allow in the HTML of the social share and social media follow icons
+$heateor_sss_default_attribs = array(
+    'id' => array(),
+    'class' => array(),
+    'title' => array(),
+    'style' => array(),
+    'data' => array(),
+    'focusable' => array(),
+    'width' => array(),
+    'height' => array(),
+    'opacity' => array(),
+    'data-heateor-sss-href' => array(),
+    'data-heateor-sss-no-counts' => array(),
+    'data-heateor-ss-offset' => array(),
+    'data-heateor-sss-st-count' => array()
+);
+
+// tags to allow in the HTML of the social share and social media follow icons
+$heateor_sss_allowed_tags = array(
+    'div'           => array_merge( $heateor_sss_default_attribs, array(
+        'data-href' => array(),
+        'data-layout' => array(),
+        'data-action' => array(),
+        'data-show-faces' => array(),
+        'data-share' => array(),
+    ) ),
+    'span'          => array_merge( $heateor_sss_default_attribs, array(
+        'onClick' => array(),
+        'onclick' => array(),
+    ) ),
+    'p'             => $heateor_sss_default_attribs,
+    'a'             => array_merge( $heateor_sss_default_attribs, array(
+        'href' => array( 'Javascript:void(0)', 'javascript:void(0)' ),
+        'onClick' => array(),
+        'onclick' => array(),
+        'target' => array( '_blank', '_top' ),
+        'rel' => array(),
+        'data-url' => array(),
+        'data-counturl' => array(),
+        'data-text' => array(),
+        'data-via' => array(),
+        'data-lang' => array(),
+    ) ),
+    'svg'           => array_merge( $heateor_sss_default_attribs, array(
+        'viewBox' => array(),
+        'viewbox' => array(),
+        'aria-hidden' => array(),
+        'xmlns' => array(),
+        'xml:space' => array(),
+        'version' => array(),
+        'xmlns:xlink' => array(),
+    ) ),
+    'script'           => array_merge( $heateor_sss_default_attribs, array(
+        'src' => array(),
+        'type' => array(),
+        'data-url' => array(),
+        'data-counter' => array(),
+        'async' => array(),
+    ) ),
+    'u'             => $heateor_sss_default_attribs,
+    'i'             => $heateor_sss_default_attribs,
+    'q'             => $heateor_sss_default_attribs,
+    'b'             => $heateor_sss_default_attribs,
+    'ul'            => $heateor_sss_default_attribs,
+    'ol'            => $heateor_sss_default_attribs,
+    'li'            => $heateor_sss_default_attribs,
+    'br'            => $heateor_sss_default_attribs,
+    'hr'            => $heateor_sss_default_attribs,
+    'strong'        => $heateor_sss_default_attribs,
+    'blockquote'    => $heateor_sss_default_attribs,
+    'del'           => $heateor_sss_default_attribs,
+    'strike'        => $heateor_sss_default_attribs,
+    'em'            => $heateor_sss_default_attribs,
+    'code'          => $heateor_sss_default_attribs,
+    'path'          => array_merge( $heateor_sss_default_attribs, array(
+        'stroke-width' => array(),
+        'stroke'  => array(),
+        'fill' => array(),
+        'd' => array()
+    ) ),
+    'circle'        => array_merge( $heateor_sss_default_attribs, array(
+        'stroke-width' => array(),
+        'stroke'  => array(),
+        'fill' => array(),
+        'cx' => array(),
+        'cy' => array(),
+        'r' => array()
+    ) ),
+    'polygon'        => array_merge( $heateor_sss_default_attribs, array(
+        'stroke-width' => array(),
+        'stroke'  => array(),
+        'fill' => array(),
+        'points' => array()
+    ) ),
+    'g'          => array_merge( $heateor_sss_default_attribs, array(
+        'stroke-width' => array(),
+        'stroke'  => array(),
+        'stroke-linecap' => array(),
+        'stroke-miterlimit' => array(),
+        'fill' => array(),
+        'fill' => array(),
+        'fill' => array(),
+        'fill' => array(),
+    ) ),
+    'style'          => array_merge( $heateor_sss_default_attribs, array(
+        'type' => array(),
+    ) )
+);
 
 /**
  * Save default plugin options
@@ -127,8 +216,6 @@ function heateor_sss_save_default_options() {
 	   'buffer_username' => '',
 	   'custom_css' => '',
 	   'amp_enable' => '1',
-	   'fb_key' => '',
-	   'fb_secret' => '',
 	   'instagram_username' => '',
 	   'vertical_instagram_username' => '',
 	   'youtube_username' => '',
@@ -193,7 +280,7 @@ require plugin_dir_path( __FILE__ ) . 'includes/class-sassy-social-share.php';
 /**
  * Begins execution of the plugin.
  *
- * @since    1.0.0
+ * @since    1.0
  */
 function heateor_sss_run() {
 

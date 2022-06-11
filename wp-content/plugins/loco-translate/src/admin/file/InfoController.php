@@ -22,9 +22,9 @@ class Loco_admin_file_InfoController extends Loco_admin_file_BaseController {
      * {@inheritdoc}
      */
     public function getHelpTabs(){
-        return array (
+        return  [
             __('Overview','default') => $this->viewSnippet('tab-file-info'),
-        );
+        ];
     }
     
     
@@ -32,10 +32,9 @@ class Loco_admin_file_InfoController extends Loco_admin_file_BaseController {
      * {@inheritdoc}
      */
     public function render(){
-        
+        /* @var Loco_fs_LocaleFile $file */
         $file = $this->get('file');
-        $name = $file->basename();
-        $this->set('title', $name );
+        $this->setFileTitle($file);
         
         if( $fail = $this->getFileError($file) ){
             return $fail;
@@ -67,10 +66,22 @@ class Loco_admin_file_InfoController extends Loco_admin_file_BaseController {
             $dinfo['existent'] = true;
             $dinfo['writable'] = $dir->writable();
         }
-        
+
+        // secure download link
+        $args = new Loco_mvc_HiddenFields(  [
+            'route' => 'download',
+            'action' => 'loco_download',
+            'path' => $file->getRelativePath(loco_constant('WP_CONTENT_DIR')),
+        ] );
+        $args->setNonce('download');
+        $finfo['download'] = $args->getHref( admin_url('admin-ajax.php','relative') );
+
+        // allow link to modify headers/settings
+        $finfo['configure'] = str_replace('file-info','file-head',$_SERVER['REQUEST_URI']);
+
         // collect note worthy problems with file headers
         $debugging = loco_debugging();
-        $debug = array();
+        $debug = [];
         
         // get the name of the web server for information purposes
         $this->set('httpd', Loco_compat_PosixExtension::getHttpdUser() );
@@ -101,7 +112,6 @@ class Loco_admin_file_InfoController extends Loco_admin_file_BaseController {
             // don't attempt to pull locale of template file
             if( 'pot' !== $ext && ! $isTemplate ){
                 $locale = $file->getLocale();
-                $code = (string) $locale;
                 if( $locale->isValid() ){
                     // find PO/MO counter parts
                     if( 'po' === $ext ){
@@ -134,8 +144,9 @@ class Loco_admin_file_InfoController extends Loco_admin_file_BaseController {
                 $meta = Loco_gettext_Metadata::create($file,$data);
                 $this->set( 'meta', $meta );
                 // allow PO header to specify alternative template for sync
-                if( $head->has('X-Loco-Template') ){
-                    $altpot = new Loco_fs_File($head['X-Loco-Template']);
+                $opts = new Loco_gettext_SyncOptions($head);
+                if( $opts->hasTemplate() ){
+                    $altpot = $opts->getTemplate();
                     $altpot->normalize( $this->getBundle()->getDirectoryPath() );
                     if( $altpot->exists() && ( ! $template || ! $template->equal($altpot) ) ){
                         $template = $altpot;
@@ -144,28 +155,29 @@ class Loco_admin_file_InfoController extends Loco_admin_file_BaseController {
                 // establish whether PO is in sync with POT
                 if( $template && ! $isTemplate && 'po' === $ext && $template->exists() ){
                     try {
-                        $this->set('potfile', new Loco_mvc_FileParams( array(
+                        $this->set('potfile', new Loco_mvc_FileParams( [
                             'synced' => Loco_gettext_Data::load($template)->equalSource($data),
-                        ), $template ) );
+                        ], $template ) );
                     }
                     catch( Exception $e ){
                         // ignore invalid template in this context
                     }
                 }
                 if( $debugging ){
-                    // missing or invalid headers are tollerated but developers should be notified
-                    if( $debugging && ! count($head) ){
+                    // missing or invalid headers are tolerated but developers should be notified
+                    if( ! count($head) ){
                         $debug[] = __('File does not have a valid header','loco-translate');
                     }
                     // Language header sanity checks, raising developer (debug) warnings
                     if( $locale ){
-                        if( $value = $head['Language'] ){
-                            $check = (string) Loco_Locale::parse($value);
-                            if( $check !== $code ){
-                                $debug[]= sprintf( __('Language header is "%s" but file name contains "%s"','loco-translate'), $value, $code );
+                        $value = $head->trimmed('Language');
+                        if( '' !== $value ){
+                            if( Loco_Locale::parse($value)->__toString() !== $locale->__toString() ){
+                                $debug[]= sprintf( __('Language header is "%s" but file name contains "%s"','loco-translate'), $value, $locale );
                             }
                         }
-                        if( $value = $head['Plural-Forms'] ){
+                        $value = $head->trimmed('Plural-Forms');
+                        if( '' !== $value ){
                             try {
                                 $locale->setPluralFormsHeader($value);
                             }
@@ -175,8 +187,12 @@ class Loco_admin_file_InfoController extends Loco_admin_file_BaseController {
                         }
                     }
                     // Other sanity checks
-                    if( $project && ( $value = $head['Project-Id-Version'] ) && $value !== $project->getName() ){
-                        $debug[] = sprintf('Project-Id-Version header is "%s" but project is "%s"', $value, $project );
+                    if( $project && $head->has('Project-Id-Version') ){
+                        $inProj = $project->getName();
+                        $inHead = $head->trimmed('Project-Id-Version');
+                        if( false === strpos($inProj,$inHead) && false === strpos($inHead,$inProj) ) {
+                            $debug[] = sprintf( 'Project-Id-Version header is "%s" but project is "%s"', $inHead, $inProj );
+                        }
                     }
                 }
                 // Count source text for templates only (assumed English)

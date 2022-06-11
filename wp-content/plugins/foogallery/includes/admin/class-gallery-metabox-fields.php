@@ -16,7 +16,7 @@ if ( ! class_exists( 'FooGallery_Admin_Gallery_MetaBox_Fields' ) ) {
 		 * @param       $gallery FooGallery
 		 * @param       $template
 		 */
-		function render_gallery_template_field( $field = array(), $gallery, $template ) {
+		function render_gallery_template_field( $field, $gallery, $template ) {
 			$template_slug = $template['slug'];
 
 			//only declare up front so no debug warnings are shown
@@ -129,7 +129,7 @@ if ( ! class_exists( 'FooGallery_Admin_Gallery_MetaBox_Fields' ) ) {
 				case 'number':
 					$min = isset($min) ? $min : 0;
 					$step = isset($step) ? $step : 1;
-					echo '<input class="regular-text ' . $class . '" type="number" step="' . $step . '" min="' . $min .'" id="FooGallerySettings_' . $id . '" name="' . FOOGALLERY_META_SETTINGS . '[' . $id . ']" placeholder="' . $placeholder . '" value="' . esc_attr( $field['value'] ) . '" />';
+					echo '<input class="small-text ' . $class . '" type="number" step="' . $step . '" min="' . $min .'" id="FooGallerySettings_' . $id . '" name="' . FOOGALLERY_META_SETTINGS . '[' . $id . ']" placeholder="' . $placeholder . '" value="' . esc_attr( $field['value'] ) . '" />';
 
 					break;
 

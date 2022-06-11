@@ -28,8 +28,13 @@ class Loco_ajax_XgettextController extends Loco_ajax_common_BundleController {
             throw new Loco_error_Exception('Front end did not post $name');
         }
 
-        // POT file shouldn't exist currently
+        // POT file should be .pot but we'll allow .po
         $potfile = new Loco_fs_File( $target.'/'.$name );
+        $ext = strtolower( $potfile->fullExtension() );
+        if( 'pot' !== $ext && 'po' !== $ext ){
+            throw new Loco_error_Exception('Disallowed file extension');
+        }
+        // File shouldn't exist currently
         $api = new Loco_api_WordPressFileSystem;
         $api->authorizeCreate($potfile);
         // Do extraction and grab only given domain's strings
@@ -46,11 +51,11 @@ class Loco_ajax_XgettextController extends Loco_ajax_common_BundleController {
         
         // set response data for debugging
         if( loco_debugging() ){
-            $this->set( 'debug', array (
+            $this->set( 'debug',  [
                 'potname' => $potfile->basename(),
                 'potsize' => $potsize,
                 'total' => $ext->getTotal(),
-            ) );
+            ] );
         }
 
         // push recent items on file creation
@@ -68,9 +73,9 @@ class Loco_ajax_XgettextController extends Loco_ajax_common_BundleController {
         
         // redirect front end to bundle view. Discourages manual editing of template
         $type = strtolower( $bundle->getType() );   
-        $href = Loco_mvc_AdminRouter::generate( sprintf('%s-view',$type), array(
+        $href = Loco_mvc_AdminRouter::generate( sprintf('%s-view',$type), [
             'bundle' => $bundle->getHandle(),
-        ) );
+        ] );
         $hash = '#loco-'.$project->getId();
         $this->set( 'redirect', $href.$hash );
         

@@ -7,7 +7,7 @@ window._EPYTWIZ_ = window._EPYTWIZ_ || {};
         var $this = this,
                 $window = $(window);
 
-        $window.scroll(function (e)
+        $window.on('scroll', function (e)
         {
             if ($window.scrollTop() > pos)
             {
@@ -93,7 +93,7 @@ window._EPYTWIZ_ = window._EPYTWIZ_ || {};
             },
             heightStyle: "content",
             autoHeight: false
-        }).find('h3.header-go').click(function ()
+        }).find('h3.header-go').on('click', function ()
         {
             window.open($(this).find('a').attr('href'), '_blank');
             return false;
@@ -104,13 +104,13 @@ window._EPYTWIZ_ = window._EPYTWIZ_ || {};
 
         if (window._EPYTWIZ_.acc_expand)
         {
-            $('.wiz-accordion #' + window._EPYTWIZ_.acc_expand).click();
+            $('.wiz-accordion #' + window._EPYTWIZ_.acc_expand).trigger('click');
         }
 
         $('form.wizform').each(function ()
         {
             $thisForm = $(this);
-            $thisForm.find('.txturlpastecustom').on('paste', function ()
+            $thisForm.find('.txturlpastecustom').on('paste change', function ()
             {
                 $thisTxtUrl = $(this);
                 setTimeout(function ()
@@ -119,7 +119,7 @@ window._EPYTWIZ_ = window._EPYTWIZ_ || {};
                     var badpaste = /<.*/i;
                     if (badpaste.test(thepaste))
                     {
-                        var reg = new RegExp('(?:https?://)?(?:www\\.)?(?:youtu\\.be/|youtube\\.com(?:/embed/|/v/|/watch\\?v=))([\\w-]{10,12})', 'ig');
+                        var reg = new RegExp('(?:https?://)?(?:www\\.)?(?:youtu\\.be/|youtube\\.com(?:/embed/|/shorts/|/v/|/watch\\?v=))([\\w-]{10,12})', 'ig');
                         //get matches found for the regular expression
                         var matches = reg.exec(thepaste);
                         //check if we have found a match for a YouTube video
@@ -169,6 +169,19 @@ window._EPYTWIZ_ = window._EPYTWIZ_ || {};
         $epyt_wiz_wrap.on('click', '.moviecontainer a.closeme', function ()
         {
             window._EPYTWIZ_.closeme($(this).data('vid'));
+        });
+
+        $epyt_wiz_wrap.on('paste change input propertychange', '#txtUrlChannel', function ()
+        {
+            if ($(this).val().indexOf('/c/') > 0)
+            {
+                $('.error-channel-format').addClass('orange bold');
+                $(this).val('');
+            }
+            else
+            {
+                $('.error-channel-format').removeClass('orange bold');
+            }
         });
 
     });

@@ -1,6 +1,6 @@
 <?php
 
-class AHCFree_WPHitsCounterPro {
+class WPHitsCounter {
 
     var $pageId;
     var $pageTitle;
@@ -49,9 +49,9 @@ class AHCFree_WPHitsCounterPro {
 
 
 
-	$this->userAgent = $_SERVER['HTTP_USER_AGENT'];
+	$this->userAgent = ahc_free_sanitize_text_or_array_field($_SERVER['HTTP_USER_AGENT']);
 
-	$this->pageId = (isset($page_id)) ? $page_id : $_GET['page_id'];
+	$this->pageId = (isset($page_id)) ? $page_id : ahc_free_sanitize_text_or_array_field($_GET['page_id']);
 
 	$this->pageTitle = $page_title;
 
@@ -70,7 +70,7 @@ class AHCFree_WPHitsCounterPro {
 
 	    if ($hostName != $_SERVER['SERVER_NAME']) {
 
-		$this->referer = $_SERVER['HTTP_REFERER'];
+		$this->referer = ahc_free_sanitize_text_or_array_field($_SERVER['HTTP_REFERER']);
 
 		$this->refererSite = $hostName;
 	    }
@@ -96,6 +96,8 @@ class AHCFree_WPHitsCounterPro {
 
      */
     public function traceVisitorHit() {
+		
+	
 
 	//$this->cleanUnwantedRecords();
 
@@ -107,7 +109,9 @@ class AHCFree_WPHitsCounterPro {
 
 	    $this->getBrowser();
 
-	    usleep(1000);
+	    $this->getCountryId();
+
+	    usleep(10000);
 
 	    if (!empty($this->refererSite)) {
 
@@ -189,7 +193,9 @@ class AHCFree_WPHitsCounterPro {
 
 
 	    $this->recordThisHits();
-	}
+	
+			
+		}
     }
 
 //--------------------------------------------
@@ -211,17 +217,18 @@ class AHCFree_WPHitsCounterPro {
 		$wpdb->insert(
 			'ahc_online_users',
 			array(
-				'date'			=> date('Y-m-d H:i:s'),
+				'date'			=> ahcfree_localtime('Y-m-d H:i:s'),
 				'hit_ip_address' => $this->ipAddress,
 				'hit_page_id'	=>	$this->pageId,
+				'site_id'	=>	get_current_blog_id()
 			)
 	);
 
-	$sql = "SELECT COUNT(`hit_id`) AS ct  FROM `ahc_hits` WHERE DATE(`hit_date`) = '". date("Y-m-d") ."' AND `hit_ip_address` = %s AND `hit_page_id` = %s";
+	//$sql = "SELECT COUNT(`hit_id`) AS ct  FROM `ahc_hits` WHERE DATE(`hit_date`) = '". ahcfree_localtime("Y-m-d") ."' AND `hit_ip_address` = %s AND `hit_page_id` = %s";
 
-        //$sql = "SELECT COUNT(`hit_id`) AS ct FROM `ahc_hits` WHERE DATE(CONVERT_TZ(CONCAT_WS(' ',hit_date,hit_time),'" . AHCFREE_SERVER_CURRENT_TIMEZONE . "','" . $custom_timezone_offset . "')) = DATE(CONVERT_TZ(NOW( ),'" . AHCFREE_SERVER_CURRENT_TIMEZONE . "','" . $custom_timezone_offset . "')) AND `hit_ip_address` = %s AND `hit_page_id` = %s";
+        $sql = "SELECT COUNT(`hit_id`) AS ct FROM `ahc_hits` WHERE DATE(CONVERT_TZ(CONCAT_WS(' ',hit_date,hit_time),'" . AHCFREE_SERVER_CURRENT_TIMEZONE . "','" . $custom_timezone_offset . "')) = '".ahcfree_localtime("Y-m-d")."' AND `hit_ip_address` = %s AND `hit_page_id` = %s AND `site_id` = %d ";
 
-	$result = $wpdb->get_results($wpdb->prepare($sql, $this->ipAddress, $this->pageId), OBJECT);
+	$result = $wpdb->get_results($wpdb->prepare($sql, $this->ipAddress, $this->pageId,get_current_blog_id()), OBJECT);
 
 	if ($result !== false) {
 
@@ -246,11 +253,12 @@ class AHCFree_WPHitsCounterPro {
 
         $custom_timezone_offset = ahcfree_get_current_timezone_offset();
 
-	$sql = "SELECT COUNT(`hit_id`) AS ct  FROM `ahc_hits` WHERE DATE(`hit_date`) = '". date("Y-m-d") ."' AND `hit_ip_address` = %s";
+	/*$sql = "SELECT COUNT(`hit_id`) AS ct  FROM `ahc_hits` WHERE DATE(`hit_date`) = '". gmdate("Y-m-d") ."' AND `hit_ip_address` = %s";*/
 	
-        //$sql = "SELECT COUNT(`hit_id`) AS ct  FROM `ahc_hits` WHERE DATE(CONVERT_TZ(CONCAT_WS(' ',hit_date,hit_time),'" . AHCFREE_SERVER_CURRENT_TIMEZONE . "','" . $custom_timezone_offset . "')) = DATE(CONVERT_TZ(NOW( ),'" . AHCFREE_SERVER_CURRENT_TIMEZONE . "','" . $custom_timezone_offset . "')) AND `hit_ip_address` = %s";
+        $sql = "SELECT COUNT(`hit_id`) AS ct  FROM `ahc_hits` WHERE site_id = ".get_current_blog_id()." and DATE(CONVERT_TZ(CONCAT_WS(' ',hit_date,hit_time),'" . AHCFREE_SERVER_CURRENT_TIMEZONE . "','" . $custom_timezone_offset . "')) = '".ahcfree_localtime("Y-m-d")."' AND `hit_ip_address` = %s";
 
 	$result = $wpdb->get_results($wpdb->prepare($sql, $this->ipAddress), OBJECT);
+	
 	if ($result !== false) {
 
 	    return ((int) $result[0]->ct > 0);
@@ -268,56 +276,67 @@ class AHCFree_WPHitsCounterPro {
      * @return void
 
      */
+	public function get_browser_id($browser){
+		global $wpdb;
+		$sql = "SELECT `bsr_id` FROM `ahc_browsers` WHERE `bsr_name` = %s and site_id = %d ";
+
+		$results = $wpdb->get_results($wpdb->prepare($sql, $browser,get_current_blog_id()), OBJECT);
+
+		if ($results !== false && !empty($results)) {
+			return $results[0]->bsr_id;
+		}
+		return 0;
+	}
     protected function getBrowser() {
 
 	if (strpos($this->userAgent, 'MSIE') !== false) {
 
-	    $this->browser = 1;
+	    $this->browser = $this->get_browser_id('IE');
 	} elseif (strpos($this->userAgent, 'Trident') !== false) {
 
-	    $this->browser = 1;
+	    $this->browser = $this->get_browser_id('IE');
 	} elseif (strpos($this->userAgent, 'Gecko') !== false) {
 
 	    if (strpos($this->userAgent, 'Firefox') !== false) {
 
-		$this->browser = 2;
+		$this->browser = $this->get_browser_id('Firefox');
 	    } elseif (strpos($this->userAgent, 'Netscape') !== false) {
 
-		$this->browser = 3;
+		$this->browser = $this->get_browser_id('Netscape');
 	    } elseif (strpos($this->userAgent, 'Chrome') !== false) {
 
-		$this->browser = 4;
+		$this->browser = $this->get_browser_id('Chrome');
 	    } else {
 
-		$this->browser = 5;
+		$this->browser = $this->get_browser_id('Gecko/Mozilla');
 	    }
 	} elseif (strpos($this->userAgent, 'Opera Mini') !== false) {
 
-	    $this->browser = 6;
+	    $this->browser = $this->get_browser_id('Opera Mini');
 	} elseif (strpos($this->userAgent, 'Opera') !== false) {
 
-	    $this->browser = 7;
+	    $this->browser = $this->get_browser_id('Opera');
 	} elseif (strpos($this->userAgent, 'Safari') !== false) {
 
-	    $this->browser = 8;
+	    $this->browser = $this->get_browser_id('Safari');
 	} elseif (strpos($this->userAgent, 'iPad') !== false) {
 
-	    $this->browser = 9;
+	    $this->browser = $this->get_browser_id('iPad');
 	} elseif (strpos($this->userAgent, 'Android') !== false) {
 
-	    $this->browser = 10;
+	    $this->browser = $this->get_browser_id('Android');
 	} elseif (strpos($this->userAgent, 'AIR') !== false) {
 
-	    $this->browser = 11;
+	    $this->browser = $this->get_browser_id('AIR');
 	} elseif (strpos($this->userAgent, 'Fluid') !== false) {
 
-	    $this->browser = 12;
+	    $this->browser = $this->get_browser_id('Fluid');
 	} elseif (strpos($this->userAgent, 'Maxthon') !== false) {
 
-	    $this->browser = 13;
+	    $this->browser = $this->get_browser_id('Maxthon');
 	} else {
 
-	    $this->browser = 14;
+	    $this->browser = $this->get_browser_id('unknown');
 	}
     }
 
@@ -332,15 +351,41 @@ class AHCFree_WPHitsCounterPro {
      * @return void
 
      */
-    protected function getCountryInternetCode() {
 
+	
+	protected function getCountryInternetCode() {
+	
 	if (!$this->ipIsUnknown) {
+		
+	  $ip_data = ahcfree_advanced_get_link("http://ip-api.com/json/".$this->ipAddress);
+	  
 
-	    $gi = geoip_open(AHCFREE_PLUGIN_ROOT_DIR . AHCFREE_DS . "geoip" . AHCFREE_DS . "data" . AHCFREE_DS . "GeoIP.dat", GEOIP_STANDARD);
+	  $countryCode = isset($ip_data->countryCode) ? $ip_data->countryCode : '';
+		
+	  if(trim($countryCode) != '' && strlen($countryCode) == 2)
+	  {
+		$this->countryInternetCode  =  $countryCode;
+		
+	  }else{
+		  
+		   $ip_data = ahcfree_advanced_get_link("https://geoip-db.com/json/".$vtr_ip_address);
+			   
+			   $ahc_city =  isset($ip_data->city) ? $ip_data->city : '';
+			   $ahc_region =  isset($ip_data->state) ? $ip_data->state : '';
+			   $this->countryInternetCode = isset($ip_data->country_code) ? $ip_data->country_code : '';
+	 		  
+			  if(empty($ip_data->country_code))
+			  {
+					$ip_data = (ahcfree_advanced_get_link("http://www.geoplugin.net/json.gp?ip=".$vtr_ip_address));
 
-	    $this->countryInternetCode = geoip_country_code_by_addr($gi, $this->ipAddress);
+					$this->countryInternetCode = isset($ip_data->geoplugin_countryCode) ? $ip_data->geoplugin_countryCode : '';
 
-	    geoip_close($gi);
+
+			   }
+	  
+
+	    
+	  }
 	}
 
 	if (empty($this->countryInternetCode)) {
@@ -366,7 +411,26 @@ class AHCFree_WPHitsCounterPro {
      * @return void
 
      */
-   
+    protected function getCountryId() {
+
+	global $wpdb;
+
+	$this->getCountryInternetCode();
+
+	if (!empty($this->countryInternetCode)) {
+
+	    $sql = "SELECT `ctr_id` FROM `ahc_countries` WHERE `ctr_internet_code` = %s  and site_id = %d ";
+
+	    $results = $wpdb->get_results($wpdb->prepare($sql, $this->countryInternetCode,get_current_blog_id()), OBJECT);
+
+	    if ($results !== false && !empty($results)) {
+
+		$this->countryId = $results[0]->ctr_id;
+
+		return;
+	    }
+	}
+    }
 
 //--------------------------------------------
 
@@ -466,7 +530,7 @@ class AHCFree_WPHitsCounterPro {
 	$del_result = $wpdb->get_results($del_sql, OBJECT);
 
 
-	$sql = "SELECT COUNT(`vst_id`) AS ct  FROM `ahc_visitors` WHERE DATE(`vst_date`) = '".date("Y-m-d")."'";
+	$sql = "SELECT COUNT(`vst_id`) AS ct  FROM `ahc_visitors` WHERE site_id = ".get_current_blog_id()." and DATE(`vst_date`) = '".gmdate("Y-m-d")."'";
 	
         //$sql = "SELECT COUNT(`vst_id`) AS ct  FROM `ahc_visitors` WHERE DATE(CONVERT_TZ(vst_date,'" . AHCFREE_SERVER_CURRENT_TIMEZONE . "','" . $custom_timezone_offset . "')) = DATE(CONVERT_TZ(NOW( ),'" . AHCFREE_SERVER_CURRENT_TIMEZONE . "','" . $custom_timezone_offset . "'))";
 
@@ -497,7 +561,7 @@ class AHCFree_WPHitsCounterPro {
 
 	global $wpdb;
 
-	$sql = "INSERT INTO `ahc_visitors` (`vst_date`, `vst_visitors`, `vst_visits`) VALUES ('".date("Y-m-d H:i:s")."', 0, 0)";
+	$sql = "INSERT INTO `ahc_visitors` (`vst_date`, `vst_visitors`, `vst_visits`, `site_id`) VALUES ('".gmdate("Y-m-d H:i:s")."', 0, 0,'".get_current_blog_id()."')";
 
 	if ($wpdb->query($sql) !== false) {
 
@@ -526,10 +590,11 @@ class AHCFree_WPHitsCounterPro {
 
 	global $wpdb;
 
-	$sql = "DELETE FROM ahc_online_users WHERE DATE(`date`) <> '".date("Y-m-d")."'";
+	$sql = "DELETE FROM ahc_online_users WHERE DATE(`date`) <> '".gmdate("Y-m-d")."'";
 	$wpdb->query($sql);
 	
-	$sql = "DELETE FROM `ahc_hits` WHERE DATE(`hit_date`) <> '".date("Y-m-d")."'";
+	$sql = "DELETE FROM `ahc_hits` WHERE DATE(`hit_date`) <> '".gmdate("Y-m-d")."'";
+		
 
 	if ($wpdb->query($sql) !== false) {
 
@@ -563,9 +628,9 @@ class AHCFree_WPHitsCounterPro {
 
 	global $wpdb;
 
-	$sql = "UPDATE `ahc_browsers` SET bsr_visits = bsr_visits + 1 WHERE bsr_id = %d";
+	$sql = "UPDATE `ahc_browsers` SET bsr_visits = bsr_visits + 1 WHERE bsr_id = %d  and site_id=%d";
 
-	if ($wpdb->query($wpdb->prepare($sql, $bsr_id)) !== false) {
+	if ($wpdb->query($wpdb->prepare($sql, $bsr_id,get_current_blog_id())) !== false) {
 
 	    return true;
 	}
@@ -600,9 +665,9 @@ class AHCFree_WPHitsCounterPro {
 
 	global $wpdb;
 
-	$sql = "UPDATE `ahc_countries` SET ctr_visitors = ctr_visitors + %d, ctr_visits = ctr_visits + %d WHERE ctr_id = %d";
+	$sql = "UPDATE `ahc_countries` SET ctr_visitors = ctr_visitors + %d, ctr_visits = ctr_visits + %d WHERE ctr_id = %d  and site_id = %d";
 
-	return ($wpdb->query($wpdb->prepare($sql, $visitors, $visits, $ctr_id)) !== false);
+	return ($wpdb->query($wpdb->prepare($sql, $visitors, $visits, $ctr_id,get_current_blog_id())) !== false);
     }
 
 //--------------------------------------------
@@ -632,25 +697,25 @@ class AHCFree_WPHitsCounterPro {
 
     $custom_timezone_offset = ahcfree_get_current_timezone_offset();
 
-	$sql = "SELECT vtsh_id FROM `ahc_searching_visits` WHERE srh_id = %d AND DATE(vtsh_date) = '".date("Y-m-d")."'";
+	$sql = "SELECT vtsh_id FROM `ahc_searching_visits` WHERE site_id = %d AND srh_id = %d AND DATE(vtsh_date) = '".gmdate("Y-m-d")."'";
 	//$sql = "SELECT vtsh_id FROM `ahc_searching_visits` WHERE srh_id = %d AND DATE(CONVERT_TZ(vtsh_date,'" . AHCFREE_SERVER_CURRENT_TIMEZONE . "','" . $custom_timezone_offset . "')) = DATE(CONVERT_TZ(NOW( ),'" . AHCFREE_SERVER_CURRENT_TIMEZONE . "','" . $custom_timezone_offset . "'))";
 
-	$result = $wpdb->get_results($wpdb->prepare($sql, $srh_id), OBJECT);
+	$result = $wpdb->get_results($wpdb->prepare($sql, get_current_blog_id(),$srh_id), OBJECT);
 
 	if ($result !== false) {
 
 	    if ($wpdb->num_rows > 0) {
 
-		$sql2 = "UPDATE `ahc_searching_visits` SET vtsh_visits = vtsh_visits + 1 WHERE vtsh_id = %d";
+		$sql2 = "UPDATE `ahc_searching_visits` SET vtsh_visits = vtsh_visits + 1 WHERE vtsh_id = %d and site_id=%d";
 
-		return ($wpdb->query($wpdb->prepare($sql2, $result[0]->vtsh_id)) !== false);
+		return ($wpdb->query($wpdb->prepare($sql2, $result[0]->vtsh_id,get_current_blog_id())) !== false);
 	    } else {
 
-		$sql2 = "INSERT INTO `ahc_searching_visits` (srh_id, vtsh_date, vtsh_visits) 
+		$sql2 = "INSERT INTO `ahc_searching_visits` (srh_id, vtsh_date, vtsh_visits,site_id) 
 
-						VALUES (%d, %s, 1)";
+						VALUES (%d, %s, 1,%d)";
 
-		return ($wpdb->query($wpdb->prepare($sql2, $srh_id, date("Y-m-d H:i:s"))) !== false);
+		return ($wpdb->query($wpdb->prepare($sql2, $srh_id, gmdate("Y-m-d H:i:s"),get_current_blog_id())) !== false);
 	    }
 	} else {
 
@@ -684,14 +749,14 @@ class AHCFree_WPHitsCounterPro {
 	global $wpdb;
 
 	
-	$sql = "INSERT INTO `ahc_daily_visitors_stats` (vst_date, vst_visitors, vst_visits) values(%s, %d, %d )";
+	$sql = "INSERT INTO `ahc_daily_visitors_stats` (vst_date, vst_visitors, vst_visits,site_id) values(%s, %d, %d, %d )";
 
-	$wpdb->query($wpdb->prepare($sql, date("Y-m-d H:i:s"), $visitors, $visits));
+	$wpdb->query($wpdb->prepare($sql, gmdate("Y-m-d H:i:s"), $visitors, $visits, get_current_blog_id()));
 	
-	$sql = "INSERT INTO `ahc_visitors` (vst_date, vst_visitors, vst_visits) values(%s, %d, %d )";	
+	$sql = "INSERT INTO `ahc_visitors` (vst_date, vst_visitors, vst_visits,site_id) values(%s, %d, %d, %d)";
 	//$sql = "UPDATE `ahc_visitors` SET vst_visitors = vst_visitors + %d, vst_visits = vst_visits + %d WHERE DATE(vst_date) = DATE(NOW())";
 
-	return ($wpdb->query($wpdb->prepare($sql, date("Y-m-d H:i:s"), $visitors, $visits)) !== false);
+	return ($wpdb->query($wpdb->prepare($sql, gmdate("Y-m-d H:i:s"), $visitors, $visits,get_current_blog_id())) !== false);
     }
 
 //--------------------------------------------
@@ -719,24 +784,24 @@ class AHCFree_WPHitsCounterPro {
 
 	global $wpdb;
 
-	$sql = "SELECT rfr_id FROM `ahc_refering_sites` where rfr_site_name = %s";
+	$sql = "SELECT rfr_id FROM `ahc_refering_sites` where rfr_site_name = %s and site_id=%d";
 
-	$result = $wpdb->get_results($wpdb->prepare($sql, $rfr_site_name), OBJECT);
+	$result = $wpdb->get_results($wpdb->prepare($sql, $rfr_site_name,get_current_blog_id()), OBJECT);
 
 	if ($result !== false) {
 
 	    if (!empty($result)) {
 
-		$sql2 = "UPDATE `ahc_refering_sites` SET rfr_visits = rfr_visits + 1 WHERE rfr_id = %d";
+		$sql2 = "UPDATE `ahc_refering_sites` SET rfr_visits = rfr_visits + 1 WHERE rfr_id = %d and site_id=%d";
 
-		return ($wpdb->query($wpdb->prepare($sql2, $result[0]->rfr_id)) !== false);
+		return ($wpdb->query($wpdb->prepare($sql2, $result[0]->rfr_id,get_current_blog_id())) !== false);
 	    } else {
 
-		$sql2 = "INSERT INTO `ahc_refering_sites` (rfr_site_name, rfr_visits) 
+		$sql2 = "INSERT INTO `ahc_refering_sites` (rfr_site_name, rfr_visits,site_id) 
 
-						VALUES(%s, 1)";
+						VALUES(%s, 1,%d)";
 
-		return ($wpdb->query($wpdb->prepare($sql2, $rfr_site_name)) !== false);
+		return ($wpdb->query($wpdb->prepare($sql2, $rfr_site_name,get_current_blog_id())) !== false);
 	    }
 	} else {
 
@@ -771,60 +836,47 @@ class AHCFree_WPHitsCounterPro {
      * @return boolean
 
      */
-    protected function updateRecentVisitors($vtr_ip_address, $vtr_referer = '', $srh_id = NULL, $bsr_id = NULL, $ctr_id = NULL) {
+       protected function updateRecentVisitors($vtr_ip_address, $vtr_referer = '', $srh_id = NULL, $bsr_id = NULL, $ctr_id = NULL) {
 
 	global $wpdb;
 
 
+	  $ahc_city = '';
+	  $ahc_region = '';
+
+	 
+		   
+	  $ip_data = (ahcfree_advanced_get_link("http://ip-api.com/json/".$vtr_ip_address));
+	     
+
+	  $ahc_city =  isset($ip_data->city) ? $ip_data->city : '';
+	  $ahc_region =  isset($ip_data->regionName) ? $ip_data->regionName : '';
+		   
+	 if($ahc_city == '' || $ahc_city == 'null' || $ahc_city == null || empty($ahc_city))
+		   {
+			   $ip_data = ahcfree_advanced_get_link("https://geoip-db.com/json/".$vtr_ip_address);
+			   
+			   $ahc_city =  isset($ip_data->city) ? $ip_data->city : '';
+			   $ahc_region =  isset($ip_data->state) ? $ip_data->state : '';
+	 		  
+			  if($ahc_city == '' || $ahc_city == 'null' || $ahc_city == null || empty($ahc_city))
+			  {	
+
+					$ip_data = (ahcfree_advanced_get_link("http://www.geoplugin.net/json.gp?ip=".$vtr_ip_address));
+
+					$ahc_city =  isset($ip_data->geoplugin_city) ? $ip_data->geoplugin_city : '';
+					$ahc_region =  isset($ip_data->geoplugin_region) ? $ip_data->geoplugin_region : '';
 
 
-	/* $ip_data = (ahcfree_advanced_get_link("http://ip-api.com/json/".$vtr_ip_address));
-	  $ip_data = json_decode($ip_data['body']);
+			   }
+			 
+		   }
 
-	  if($ip_data->city != '')
-	  {
-
-	  $ahc_city =  $ip_data->city;
-	  $ahc_region =  $ip_data->regionName;
-	  }
-
-	  if(empty($ip_data->city) or empty($ip_data->regionName))
-	  {
-	  $ip_data = (ahcfree_advanced_get_link("http://api.db-ip.com/v2/c425dbfb764da5017d283d8a2d53360be0869a4b/".$vtr_ip_address));
-	  $ip_data = json_decode($ip_data['body']);
-
-	  $ahc_city =  $ip_data->city;
-	  $ahc_region =  $ip_data->stateProv;
-	  }
-
-	 */
-
-
-
-	$ip_data = (ahcfree_advanced_get_link("http://www.geoplugin.net/json.gp?ip=" . $vtr_ip_address));
-	$ip_data = json_decode($ip_data['body']);
-
-
-	if ($ip_data->geoplugin_city != '') {
-
-	    $ahc_city = $ip_data->geoplugin_countryName;
-	    $ahc_region = $ip_data->geoplugin_city;
-	}
-
-	if (empty($ip_data->geoplugin_city) or empty($ip_data->geoplugin_city)) {
-	    $ip_data = (ahcfree_advanced_get_link("http://ip-api.com/json/" . $vtr_ip_address));
-	    $ip_data = json_decode($ip_data['body']);
-
-	    $ahc_city = $ip_data->city;
-	    $ahc_region = $ip_data->regionName;
-	}
-
-
-	$sql = "INSERT INTO `ahc_recent_visitors` (vtr_ip_address, vtr_referer, srh_id, bsr_id, ctr_id, ahc_city, ahc_region, vtr_date, vtr_time) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)";
+	$sql = "INSERT INTO `ahc_recent_visitors` (vtr_ip_address, vtr_referer, srh_id, bsr_id, ctr_id, ahc_city, ahc_region, vtr_date, vtr_time,site_id) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %d)";
 
 
 
-	return ($wpdb->query($wpdb->prepare($sql, $vtr_ip_address, $vtr_referer, $srh_id, $bsr_id, $ctr_id, $ahc_city, $ahc_region, date("Y-m-d"), date("H:i:s") )) !== false);
+	return ($wpdb->query($wpdb->prepare($sql, $vtr_ip_address, $vtr_referer, $srh_id, $bsr_id, $ctr_id, $ahc_city, $ahc_region, gmdate("Y-m-d"), gmdate("H:i:s"),get_current_blog_id() )) !== false);
     }
 
 //--------------------------------------------
@@ -860,18 +912,18 @@ class AHCFree_WPHitsCounterPro {
 
 	global $wpdb;
 
-	$sql = "INSERT INTO `ahc_keywords` (kwd_ip_address, kwd_keywords, kwd_referer, srh_id, ctr_id, bsr_id, kwd_date, kwd_time) 
+	$sql = "INSERT INTO `ahc_keywords` (kwd_ip_address, kwd_keywords, kwd_referer, srh_id, ctr_id, bsr_id, kwd_date, kwd_time,site_id) 
 
-				VALUES (%s, %s, %s, %d, %d, %d, %s, %s)";
+				VALUES (%s, %s, %s, %d, %d, %d, %s, %s, %d)";
 
-	return ($wpdb->query($wpdb->prepare($sql, $kwd_ip_address, $kwd_keywords, $kwd_referer, $srh_id, $ctr_id, $bsr_id, date("Y-m-d"), date("H:i:s"))) !== false);
+	return ($wpdb->query($wpdb->prepare($sql, $kwd_ip_address, $kwd_keywords, $kwd_referer, $srh_id, $ctr_id, $bsr_id, gmdate("Y-m-d"), gmdate("H:i:s"),get_current_blog_id())) !== false);
     }
 
 //--------------------------------------------
 
     /**
 
-     * Clean unwanted records. Only keeping a limit of fresh records. Limit is set by AHC_RECENT_VISITORS_LIMIT
+     * Clean unwanted records. Only keeping a limit of fresh records. Limit is set by AHCFREE_RECENT_VISITORS_LIMIT
 
      *
 
@@ -890,9 +942,9 @@ class AHCFree_WPHitsCounterPro {
 
 	global $wpdb;
 
-	$sql11 = "SELECT vtr_id FROM `ahc_recent_visitors` ORDER BY vtr_id LIMIT %d";
+	$sql11 = "SELECT vtr_id FROM `ahc_recent_visitors` where site_id = %d  ORDER BY vtr_id LIMIT %d";
 
-	$result = $wpdb->get_results($wpdb->prepare($sql11, AHC_RECENT_VISITORS_LIMIT), OBJECT);
+	$result = $wpdb->get_results($wpdb->prepare($sql11, get_current_blog_id(),AHCFREE_RECENT_VISITORS_LIMIT), OBJECT);
 
 	if ($result !== false) {
 
@@ -907,13 +959,13 @@ class AHCFree_WPHitsCounterPro {
 
 	    $ids1 = implode(',', $ids1);
 
-	    $sql12 = "DELETE FROM `ahc_recent_visitors`" . ((!empty($ids1)) ? " WHERE vtr_id NOT IN (" . $ids1 . ")" : "");
+	    $sql12 = "DELETE FROM `ahc_recent_visitors`" . ((!empty($ids1)) ? " WHERE site_id = ".get_current_blog_id()." and  vtr_id NOT IN (" . $ids1 . ")" : "");
 
 
 
-	    $sql21 = "SELECT kwd_id FROM `ahc_keywords` ORDER BY kwd_id LIMIT %d";
+	    $sql21 = "SELECT kwd_id FROM `ahc_keywords` where site_id=%d  ORDER BY kwd_id LIMIT %d";
 
-	    $result2 = $wpdb->get_results($wpdb->prepare($sql21, AHCFREE_RECENT_KEYWORDS_LIMIT), OBJECT);
+	    $result2 = $wpdb->get_results($wpdb->prepare($sql21, get_current_blog_id(),AHCFREE_RECENT_KEYWORDS_LIMIT), OBJECT);
 
 	    if ($result2 !== false) {
 
@@ -967,9 +1019,9 @@ class AHCFree_WPHitsCounterPro {
 
 	global $wpdb;
 
-	$sql = "SELECT til_id FROM `ahc_title_traffic` where til_page_id = %s";
+	$sql = "SELECT til_id FROM `ahc_title_traffic` where til_page_id = %s  and site_id=%d";
 
-	$result = $wpdb->get_results($wpdb->prepare($sql, $til_page_id), OBJECT);
+	$result = $wpdb->get_results($wpdb->prepare($sql, $til_page_id,get_current_blog_id()), OBJECT);
 
 	if ($result !== false) {
 
@@ -979,16 +1031,16 @@ class AHCFree_WPHitsCounterPro {
 
 						SET til_hits = til_hits + 1, til_page_title = %s 
 
-						WHERE til_id = %d";
+						WHERE til_id = %d and site_id = %d";
 
-		return ($wpdb->query($wpdb->prepare($sql2, $til_page_title, $result[0]->til_id)) !== false);
+		return ($wpdb->query($wpdb->prepare($sql2, $til_page_title, $result[0]->til_id,get_current_blog_id())) !== false);
 	    } else {
 
-		$sql2 = "INSERT INTO `ahc_title_traffic` (til_page_id, til_page_title, til_hits)  
+		$sql2 = "INSERT INTO `ahc_title_traffic` (til_page_id, til_page_title, til_hits,site_id)  
 
-						VALUES(%s, %s, 1)";
+						VALUES(%s, %s, 1, %d)";
 
-		return ($wpdb->query($wpdb->prepare($sql2, $til_page_id, $til_page_title)) !== false);
+		return ($wpdb->query($wpdb->prepare($sql2, $til_page_id, $til_page_title,get_current_blog_id())) !== false);
 	    }
 	} else {
 
@@ -1020,21 +1072,21 @@ class AHCFree_WPHitsCounterPro {
     protected function updateVisitsTime($visitors = 0, $visits = 0) {
 
 	global $wpdb;
-	$time = date('H:i:s');
+	$time = gmdate('H:i:s');
 	$sql = "UPDATE `ahc_visits_time` SET vtm_visitors = vtm_visitors + %d, vtm_visits = vtm_visits + %d 
 
-				WHERE TIME(vtm_time_from) <= '$time' AND TIME(vtm_time_to) >= '$time'";
+				WHERE TIME(vtm_time_from) <= '$time' AND TIME(vtm_time_to) >= '$time' and site_id=".get_current_blog_id();
 	$query = $wpdb->prepare($sql, $visitors, $visits);
 	$result = ($wpdb->query($query) !== false);
 	
 	$sql = "UPDATE `ahc_visits_time` SET vtm_visitors = 1
 
-				WHERE vtm_visitors = 0 AND TIME(vtm_time_from) <= '$time' AND TIME(vtm_time_to) >= '$time'";
+				WHERE vtm_visitors = 0 AND TIME(vtm_time_from) <= '$time' AND TIME(vtm_time_to) >= '$time' and site_id=".get_current_blog_id();
 	$query = $wpdb->query($sql);
 	
 	$sql = "UPDATE `ahc_visits_time` SET vtm_visits = 1
 
-				WHERE vtm_visits = 0 AND TIME(vtm_time_from) <= '$time' AND TIME(vtm_time_to) >= '$time'";
+				WHERE vtm_visits = 0 AND TIME(vtm_time_from) <= '$time' AND TIME(vtm_time_to) >= '$time' and site_id=".get_current_blog_id();
 	$query = $wpdb->query($sql);
 	
 	return $result;
@@ -1065,12 +1117,11 @@ class AHCFree_WPHitsCounterPro {
 
 				(`hit_ip_address`, `hit_user_agent`, `hit_request_uri`, `hit_page_id`, `hit_page_title`, `ctr_id`, `hit_referer`, `hit_referer_site`, 
 
-				`srh_id`, `hit_search_words`, `bsr_id`, `hit_date`, `hit_time`) 
+				`srh_id`, `hit_search_words`, `bsr_id`, `hit_date`, `hit_time`, `site_id`) 
 
-				VALUES (%s, %s, %s, %s, %s, %d, %s, %s, %d, %s, %d, %s, %s)";
+				VALUES (%s, %s, %s, %s, %s, %d, %s, %s, %d, %s, %d, %s, %s, %d)";
 
-	$result = $wpdb->query($wpdb->prepare($sql, $this->ipAddress, $this->userAgent, $this->requestUri, $this->pageId, $this->pageTitle, $this->countryId, $this->referer, $this->refererSite, $this->searchEngine, $this->keyWords, $this->browser, date("Y-m-d"), date("H:i:s") ));
-
+	$result = $wpdb->query($wpdb->prepare($sql, $this->ipAddress, $this->userAgent, $this->requestUri, $this->pageId, $this->pageTitle, $this->countryId, $this->referer, $this->refererSite, $this->searchEngine, $this->keyWords, $this->browser, gmdate("Y-m-d"), gmdate("H:i:s")  ,get_current_blog_id()));
 	return ($result !== false);
     }
 

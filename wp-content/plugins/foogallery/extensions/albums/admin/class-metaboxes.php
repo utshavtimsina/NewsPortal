@@ -119,13 +119,18 @@ if ( ! class_exists( 'FooGallery_Admin_Album_MetaBoxes' ) ) {
 					delete_post_meta( $post_id, FOOGALLERY_META_SETTINGS_OLD );
 				}
 
-				$custom_css = isset($_POST[FOOGALLERY_META_CUSTOM_CSS]) ?
-					$_POST[FOOGALLERY_META_CUSTOM_CSS] : '';
+				$custom_css = foogallery_sanitize_html( isset( $_POST[FOOGALLERY_META_CUSTOM_CSS] ) ?
+					$_POST[FOOGALLERY_META_CUSTOM_CSS] : '' );
 
 				if ( empty( $custom_css ) ) {
 					delete_post_meta( $post_id, FOOGALLERY_META_CUSTOM_CSS );
 				} else {
 					update_post_meta( $post_id, FOOGALLERY_META_CUSTOM_CSS, $custom_css );
+				}
+
+				// update usage for each of the galleries.
+				foreach ( $galleries as $gallery_id ) {
+					add_post_meta( $post_id, FOOGALLERY_META_POST_USAGE, $gallery_id, false );
 				}
 
 				do_action( 'foogallery_after_save_album', $post_id, $_POST );
@@ -206,19 +211,21 @@ if ( ! class_exists( 'FooGallery_Admin_Album_MetaBoxes' ) ) {
 						$title = $gallery->safe_name();
 						?>
 						<li class="foogallery-pile">
-							<div class="foogallery-gallery-select attachment-preview landscape<?php echo $selected; ?>" data-foogallery-id="<?php echo $gallery->ID; ?>">
-								<div class="thumbnail" style="display: table;">
+							<div class="foogallery-gallery-select landscape<?php echo $selected; ?>" data-foogallery-id="<?php echo $gallery->ID; ?>">
+								<div style="display: table;">
 									<div style="display: table-cell; vertical-align: middle; text-align: center;">
 										<img src="<?php echo $img_src; ?>"/>
-										<h3><?php echo esc_html( $title ); ?>
-											<span><?php echo $images; ?></span>
-										</h3>
+										<h3>
+                                            <?php echo esc_html( $title ); ?>
+                                            <span><?php echo $images; ?></span>
+                                        </h3>
 									</div>
 								</div>
 								<a class="info foogallery-album-info" href="#"
 								   title="<?php _e( 'Edit Album Info', 'foogallery' ); ?>"
 								   data-gallery-title="<?php echo $title; ?>"
-								   data-gallery-id="<?php echo $gallery->ID; ?>"><span class="dashicons dashicons-info"></span></a>
+								   data-gallery-id="<?php echo $gallery->ID; ?>"><span class="dashicons dashicons-info"></span>
+                                </a>
 							</div>
 						</li>
 					<?php } ?>
@@ -381,6 +388,8 @@ if ( ! class_exists( 'FooGallery_Admin_Album_MetaBoxes' ) ) {
 				//include album selection css
 				$url = FOOGALLERY_ALBUM_URL . 'css/admin-foogallery-album.css';
 				wp_enqueue_style( 'admin-foogallery-album', $url, array(), FOOGALLERY_VERSION );
+				$url = FOOGALLERY_URL . 'css/admin-foogallery-gallery-piles.css';
+				wp_enqueue_style( 'admin-foogallery-gallery-piles', $url, array(), FOOGALLERY_VERSION );
 
 				//spectrum needed for the colorpicker field
 				$url = FOOGALLERY_URL . 'lib/spectrum/spectrum.js';

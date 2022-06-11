@@ -28,7 +28,7 @@ abstract class Loco_mvc_Controller extends Loco_hooks_Hookable {
 
     /**
      * Default authorization check
-     * @return Loco_mvc_Controller
+     * @return Loco_mvc_Controller|void
      */
     public function auth(){
         if( is_user_logged_in() ){
@@ -113,5 +113,14 @@ abstract class Loco_mvc_Controller extends Loco_hooks_Hookable {
         throw new Loco_error_Exception('HTTP request blocked by loco_allow_remote filter' );
     }
 
+
+    /**
+     * number_format_i18n filter callback because our admin screens assume number_format_i18n() returns unescaped text, not HTML.
+     * @param string
+     * @return string
+     */
+    public function filter_number_format_i18n( $formatted = '' ){
+        return html_entity_decode($formatted,ENT_NOQUOTES,'UTF-8');
+    }
 
 }

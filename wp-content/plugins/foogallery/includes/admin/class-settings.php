@@ -11,12 +11,33 @@ if ( ! class_exists( 'FooGallery_Admin_Settings' ) ) {
 			add_filter( 'foogallery_admin_settings', array( $this, 'create_settings' ), 10, 2 );
 			add_action( 'foogallery_admin_settings_custom_type_render_setting', array( $this, 'render_custom_setting_types' ) );
 			add_action( 'foogallery_admin_settings_after_render_setting', array( $this, 'after_render_setting' ) );
+			add_action( 'update_option_foogallery', array( $this, 'generate_assets' ), 10, 3 );
+			add_filter( 'pre_update_option_foogallery', array( $this, 'sanitize_settings' ), 10, 3 );
 
-			// Ajax calls
+			// Ajax calls.
 			add_action( 'wp_ajax_foogallery_clear_css_optimizations', array( $this, 'ajax_clear_css_optimizations' ) );
 			add_action( 'wp_ajax_foogallery_thumb_generation_test', array( $this, 'ajax_thumb_generation_test' ) );
 			add_action( 'wp_ajax_foogallery_apply_retina_defaults', array( $this, 'ajax_apply_retina_defaults' ) );
 			add_action( 'wp_ajax_foogallery_uninstall', array( $this, 'ajax_uninstall' ) );
+		}
+
+		/**
+		 * Sanitize the foogallery settings.
+		 *
+		 * @param mixed  $value The value of the settings.
+		 * @param mixed  $old_value The old value.
+		 * @param string $option The setting name. Should be 'foogallery'.
+		 *
+		 * @return mixed
+		 */
+		public function sanitize_settings( $value, $old_value, $option ) {
+			if ( is_array( $value ) && array_key_exists( 'custom_js', $value ) ) {
+				$value['custom_js'] = foogallery_sanitize_html( $value['custom_js'] );
+			}
+			if ( is_array( $value ) && array_key_exists( 'custom_css', $value ) ) {
+				$value['custom_css'] = foogallery_sanitize_html( $value['custom_css'] );
+			}
+			return $value;
 		}
 
 		/**
@@ -34,7 +55,7 @@ if ( ! class_exists( 'FooGallery_Admin_Settings' ) ) {
 				'desc'    => sprintf( __( '%s optimizes the way it loads gallery stylesheets to improve page performance. This can lead to the incorrect CSS being loaded in some cases. Use this button to clear all the CSS optimizations that have been cached across all galleries.', 'foogallery' ), foogallery_plugin_name() ),
 				'type'    => 'clear_optimization_button',
 				'tab'     => 'general',
-				'section' => __( 'Cache', 'foogallery' )
+				'section' => __( 'Performance', 'foogallery' )
 			);
 
 	        $gallery_templates = foogallery_gallery_templates();
@@ -142,8 +163,8 @@ if ( ! class_exists( 'FooGallery_Admin_Settings' ) ) {
 
 			$settings[] = array(
 				'id'      => 'hide_editor_button',
-				'title'   => __( 'Hide WYSIWYG Editor Button', 'foogallery' ),
-				'desc'    => sprintf( __( 'If enabled, this will hide the "Add %s" button in the WYSIWYG editor.', 'foogallery' ), foogallery_plugin_name() ),
+				'title'   => __( 'Hide Classic Editor Button', 'foogallery' ),
+				'desc'    => sprintf( __( 'If enabled, this will hide the "Add %s" button in the Classic editor.', 'foogallery' ), foogallery_plugin_name() ),
 				'type'    => 'checkbox',
 				'tab'     => 'general',
 				'section' => __( 'Admin', 'foogallery' )
@@ -154,24 +175,54 @@ if ( ! class_exists( 'FooGallery_Admin_Settings' ) ) {
 			//region Images Tab
 			$tabs['thumb'] = __( 'Images', 'foogallery' );
 
-			$image_editor = str_replace( 'WP_Thumb_Image_Editor_', '', _wp_image_editor_choose( array( 'methods' => array( 'get_image' ) ) ) );
-			$gd_supported = extension_loaded( 'gd' ) ? __('yes', 'foogallery') : __('no', 'foogallery');
-			$imagick_supported = extension_loaded( 'imagick' ) ? __('yes', 'foogallery') : __('no', 'foogallery');
+			$engines = array();
+			foreach ( foogallery_thumb_available_engines() as $engine_key => $engine ) {
+				$engines[$engine_key] = '<strong>' . $engine['label'] . '</strong> - ' . $engine['description'];
+			}
 
 			$settings[] = array(
-				'id'      => 'thumb_image_library',
-				'title'   => __( 'Thumbnail Image Library', 'foogallery' ),
-				'desc'    => sprintf( __('Currently active : %s.<br />Imagick supported : %s.<br />GD supported : %s.', 'foogallery'), '<strong>' . $image_editor . '</strong>', $imagick_supported, $gd_supported ),
-				'type'    => 'html',
+				'id'      => 'thumb_engine',
+				'title'   => __( 'Thumbnail Engine', 'foogallery' ),
+				'desc'    => __( 'The thumbnail generation engine used when creating different sized thumbnails for your galleries.', 'foogallery' ),
+				'type'    => 'radio',
+				'default' => 'default',
+				'choices' => $engines,
 				'tab'     => 'thumb'
 			);
 
+			if ( foogallery_thumb_active_engine()->uses_image_editors() ) {
+				$image_editor      = str_replace( 'FooGallery_Thumb_Image_Editor_', '', _wp_image_editor_choose( array( 'methods' => array( 'get_image' ) ) ) );
+				$gd_supported      = extension_loaded( 'gd' ) ? __( 'yes', 'foogallery' ) : __( 'no', 'foogallery' );
+				$imagick_supported = extension_loaded( 'imagick' ) ? __( 'yes', 'foogallery' ) : __( 'no', 'foogallery' );
+
+				$settings[] = array(
+					'id'    => 'thumb_image_library',
+					'title' => __( 'Thumbnail Image Library', 'foogallery' ),
+					'desc'  => sprintf( __( 'Currently active : %s.<br />Imagick supported : %s.<br />GD supported : %s.', 'foogallery' ), '<strong>' . $image_editor . '</strong>', $imagick_supported, $gd_supported ),
+					'type'  => 'html',
+					'tab'   => 'thumb'
+				);
+			}
+
+			if ( foogallery_thumb_active_engine()->has_local_cache() ) {
+				$settings[] = array(
+					'id'      => 'thumb_jpeg_quality',
+					'title'   => __( 'Thumbnail JPEG Quality', 'foogallery' ),
+					'desc'    => __( 'The image quality to be used when resizing JPEG images.', 'foogallery' ),
+					'type'    => 'text',
+					'default' => '90',
+					'tab'     => 'thumb'
+				);
+			}
+
+			$image_optimization_html = sprintf( __('We recommend %s! An easy-to-use, lightweight WordPress plugin that optimizes images & PDFs.', 'foogallery'),
+				'<a href="https://shortpixel.com/homepage/affiliate/foowww" target="_blank">' . __('ShortPixel Image Optimizer' , 'foogallery') . '</a>' );
+
 			$settings[] = array(
-				'id'      => 'thumb_jpeg_quality',
-				'title'   => __( 'Thumbnail JPEG Quality', 'foogallery' ),
-				'desc'    => __( 'The image quality to be used when resizing JPEG images.', 'foogallery' ),
-				'type'    => 'text',
-				'default' => '90',
+				'id'      => 'image_optimization',
+				'title'   => __( 'Image Optimization', 'foogallery' ),
+				'type'    => 'html',
+				'desc'    => $image_optimization_html,
 				'tab'     => 'thumb'
 			);
 
@@ -185,17 +236,9 @@ if ( ! class_exists( 'FooGallery_Admin_Settings' ) ) {
 			);
 
 			$settings[] = array(
-					'id'      => 'use_original_thumbs',
-					'title'   => __( 'Use Original Thumbnails', 'foogallery' ),
-					'desc'    => __( 'Allow for the original thumbnails to be used when possible. This can be useful if your thumbs are animated gifs.<br/>PLEASE NOTE : this will only work if your gallery thumbnail sizes are identical to your thumbnail sizes under Settings -> Media.', 'foogallery' ),
-					'type'    => 'checkbox',
-					'tab'     => 'thumb'
-			);
-
-			$settings[] = array(
-				'id'      => 'thumb_resize_animations',
-				'title'   => __( 'Resize Animated GIFs', 'foogallery' ),
-				'desc'    => __( 'Should animated gifs be resized or not. If enabled, only the first frame is used in the resize.', 'foogallery' ),
+				'id'      => 'use_original_thumbs',
+				'title'   => __( 'Use Original Thumbnails', 'foogallery' ),
+				'desc'    => __( 'Allow for the original thumbnails to be used when possible. This can be useful if your thumbs are animated gifs.<br/>PLEASE NOTE : this will only work if your gallery thumbnail sizes are identical to your thumbnail sizes under Settings -> Media.', 'foogallery' ),
 				'type'    => 'checkbox',
 				'tab'     => 'thumb'
 			);
@@ -208,39 +251,46 @@ if ( ! class_exists( 'FooGallery_Admin_Settings' ) ) {
 				'tab'     => 'thumb'
 			);
 
-			$settings[] = array(
-				'id'      => 'thumb_resize_upscale_small',
-				'title'   => __( 'Upscale Small Images', 'foogallery' ),
-				'desc'    => __( 'If the original image is smaller than the thumbnail size, then upscale the image thumbnail to match the size.', 'foogallery') . '<br/>' .
-                             __('PLEASE NOTE : this is only supported if your server supports the GD image library and it is currently active.', 'foogallery' ),
-				'type'    => 'checkbox',
-				'tab'     => 'thumb'
-			);
+			if ( foogallery_thumb_active_engine()->has_local_cache() ) {
+				$settings[] = array(
+					'id'    => 'thumb_resize_upscale_small',
+					'title' => __( 'Upscale Small Images', 'foogallery' ),
+					'desc'  => __( 'If the original image is smaller than the thumbnail size, then upscale the image thumbnail to match the size.', 'foogallery' ) . '<br/>' . __( 'PLEASE NOTE : this is only supported if your server supports the GD image library and it is currently active.', 'foogallery' ),
+					'type'  => 'checkbox',
+					'tab'   => 'thumb'
+				);
 
-			$settings[] = array(
-				'id'      => 'thumb_resize_upscale_small_color',
-				'title'   => __( 'Upscale Background Color', 'foogallery' ),
-				'desc'    => __( 'The background color to use for upscaled images.', 'foogallery' ),
-				'type'    => 'text',
-				'default' => 'rgb(0,0,0)',
-				'tab'     => 'thumb'
-			);
+				$settings[] = array(
+					'id'      => 'thumb_resize_upscale_small_color',
+					'title'   => __( 'Upscale Background Color', 'foogallery' ),
+					'desc'    => __( 'The background color to use for upscaled images. You can also use "transparent" or "auto".', 'foogallery' ),
+					'type'    => 'text',
+					'default' => 'rgb(0,0,0)',
+					'tab'     => 'thumb'
+				);
+			}
 
-			$settings[] = array(
-				'id'      => 'thumb_generation_test',
-				'title'   => __( 'Thumbnail Generation Test', 'foogallery' ),
-				'desc'    => sprintf( __( 'Test to see if %s can generate the thumbnails it needs.', 'foogallery' ), foogallery_plugin_name() ),
-				'type'    => 'thumb_generation_test',
-				'tab'     => 'thumb'
-			);
+			if ( foogallery_thumb_active_engine()->requires_thumbnail_generation_tests() ) {
+				$thumb_test_html = '<a href="' . admin_url( add_query_arg( array( 'page' => 'foogallery_thumb_test' ), foogallery_admin_menu_parent_slug() ) ) . '">' . __( 'View Thumb Test Page', 'foogallery' ) . '</a>';
 
-			$settings[] = array(
-				'id'      => 'force_gd_library',
-				'title'   => __( 'Force GD Library', 'foogallery' ),
-				'desc'    => __( 'By default, WordPress will use Imagick as the default Image Editor. This will force GD to be used as the default.', 'foogallery' ),
-				'type'    => 'checkbox',
-				'tab'     => 'thumb'
-			);
+				$settings[] = array(
+					'id'    => 'thumb_generation_test',
+					'title' => __( 'Thumbnail Generation Test', 'foogallery' ),
+					'desc'  => sprintf( __( 'Test to see if %s can generate the thumbnails it needs. %s', 'foogallery' ), foogallery_plugin_name(), $thumb_test_html ),
+					'type'  => 'thumb_generation_test',
+					'tab'   => 'thumb'
+				);
+			}
+
+			if ( foogallery_thumb_active_engine()->uses_image_editors() ) {
+				$settings[] = array(
+					'id'    => 'force_gd_library',
+					'title' => __( 'Force GD Library', 'foogallery' ),
+					'desc'  => __( 'By default, WordPress will use Imagick as the default Image Editor. This will force GD to be used as the default.', 'foogallery' ),
+					'type'  => 'checkbox',
+					'tab'   => 'thumb'
+				);
+			}
 
 			//endregion Thumbnail Tab
 
@@ -272,10 +322,38 @@ if ( ! class_exists( 'FooGallery_Admin_Settings' ) ) {
 			$tabs['language'] = __( 'Language', 'foogallery' );
 
 			$settings[] = array(
+				'id'      => 'language_imageviewer_prev_text',
+				'title'   => __( 'Image Viewer "Prev" Text', 'foogallery' ),
+				'type'    => 'text',
+				'default' => __( 'Prev', 'foogallery' ),
+				'section' => __( 'Image Viewer Template', 'foogallery' ),
+				'tab'     => 'language'
+			);
+
+			$settings[] = array(
+				'id'      => 'language_imageviewer_next_text',
+				'title'   => __( 'Image Viewer "Next" Text', 'foogallery' ),
+				'type'    => 'text',
+				'default' => __( 'Next', 'foogallery' ),
+				'section' => __( 'Image Viewer Template', 'foogallery' ),
+				'tab'     => 'language'
+			);
+
+			$settings[] = array(
+				'id'      => 'language_imageviewer_of_text',
+				'title'   => __( 'Image Viewer "Of" Text', 'foogallery' ),
+				'type'    => 'text',
+				'default' => __( 'of', 'foogallery' ),
+				'section' => __( 'Image Viewer Template', 'foogallery' ),
+				'tab'     => 'language'
+			);
+
+			$settings[] = array(
 				'id'      => 'language_images_count_none_text',
 				'title'   => __( 'Image Count None Text', 'foogallery' ),
 				'type'    => 'text',
 				'default' => __( 'No images', 'foogallery' ),
+				'section' => __( 'Admin', 'foogallery' ),
 				'tab'     => 'language'
 			);
 
@@ -284,6 +362,7 @@ if ( ! class_exists( 'FooGallery_Admin_Settings' ) ) {
 				'title'   => __( 'Image Count Single Text', 'foogallery' ),
 				'type'    => 'text',
 				'default' => __( '1 image', 'foogallery' ),
+				'section' => __( 'Admin', 'foogallery' ),
 				'tab'     => 'language'
 			);
 
@@ -292,6 +371,7 @@ if ( ! class_exists( 'FooGallery_Admin_Settings' ) ) {
 				'title'   => __( 'Image Count Many Text', 'foogallery' ),
 				'type'    => 'text',
 				'default' => __( '%s images', 'foogallery' ),
+				'section' => __( 'Admin', 'foogallery' ),
 				'tab'     => 'language'
 			);
 			//endregion Language Tab
@@ -302,9 +382,10 @@ if ( ! class_exists( 'FooGallery_Admin_Settings' ) ) {
             $settings[] = array(
                 'id'      => 'enable_custom_ready',
                 'title'   => __( 'Custom Ready Event', 'foogallery' ),
-                'desc'    => sprintf( __( 'By default the jQuery ready event is used, but there are sometimes unavoidable javascript errors on the page, which could result in the default gallery templates not initializing correctly. Enable this setting to use a built-in custom ready event to overcome this if needed.', 'foogallery' ), foogallery_plugin_name() ),
+                'desc'    => sprintf( __( 'There are sometimes unavoidable javascript errors on the page, which could result in the gallery not initializing correctly. Enable this setting to use a built-in custom ready event to overcome this problem if needed.', 'foogallery' ), foogallery_plugin_name() ),
                 'type'    => 'checkbox',
-                'tab'     => 'advanced'
+                'tab'     => 'advanced',
+                'default' => 'on'
             );
 
             $settings[] = array(
@@ -318,15 +399,7 @@ if ( ! class_exists( 'FooGallery_Admin_Settings' ) ) {
 			$settings[] = array(
 				'id'      => 'enable_legacy_thumb_cropping',
 				'title'   => __( 'Enable Legacy Thumb Cropping', 'foogallery' ),
-				'desc'    => __( 'For when you want to enable legacy cropping options in certain gallery templates. This is not recommended.', 'foogallery' ),
-				'type'    => 'checkbox',
-				'tab'     => 'advanced'
-			);
-
-			$settings[] = array(
-				'id'      => 'output_json_to_script_block',
-				'title'   => __( 'Output Gallery JSON to Script Block', 'foogallery' ),
-				'desc'    => __( 'Some plugins conflict with the default way of rendering gallery items to the container. Enabling this setting will output gallery items to a separate script block.', 'foogallery' ),
+				'desc'    => __( 'Enables legacy thumbnail cropping for the Simple Portfolio gallery template, meaning it will not crop thumbnails.<br/>PLEASE NOTE : only enable this if you have been asked to by our support team.', 'foogallery' ),
 				'type'    => 'checkbox',
 				'tab'     => 'advanced'
 			);
@@ -347,22 +420,89 @@ if ( ! class_exists( 'FooGallery_Admin_Settings' ) ) {
 				'tab'     => 'advanced'
 			);
 
+			if ( foogallery_thumb_active_engine()->has_local_cache() ) {
+				$settings[] = array(
+					'id'    => 'override_thumb_test',
+					'title' => __( 'Override Thumb Test', 'foogallery' ),
+					'desc'  => __( 'Sometimes there are problems running the thumbnail generation test. This overrides the test to use a remote image from our CDN.', 'foogallery' ),
+					'type'  => 'checkbox',
+					'tab'   => 'advanced',
+				);
+			}
+
+			if ( !foogallery_is_pro() ) {
+				$settings[] = array(
+					'id'    => 'force_hide_trial',
+					'title' => __( 'Force Hide Trial Notice', 'foogallery' ),
+					'desc'  => __( 'Force the trial notice admin banner to never show', 'foogallery' ),
+					'type'  => 'checkbox',
+					'tab'   => 'advanced'
+				);
+			}
+
 			$settings[] = array(
-				'id'      => 'use_future_endpoint',
-				'title'   => __( 'Use Beta Endpoint', 'foogallery' ),
-				'desc'    => __( 'The list of available extensions are pulled from an external URL. You can also pull from a "beta" endpoint which will sometimes contain beta extensions that are not publicly available.', 'foogallery' ),
-				'type'    => 'checkbox',
-				'tab'     => 'advanced',
+				'id'    => 'demo_content',
+				'type'  => 'checkbox',
+				'title' => __( 'Demo Content Created', 'foogallery' ),
+				'desc'  => __( 'If the demo content has been created, then this will be checked. You can uncheck this to allow for demo content to be created again.', 'foogallery' ),
+				'tab'   => 'advanced'
 			);
 
 			$settings[] = array(
-				'id'      => 'override_thumb_test',
-				'title'   => __( 'Override Thumb Test', 'foogallery' ),
-				'desc'    => __( 'Sometimes there are problems running the thumbnail generation test. This overrides the test to use a remote image from our CDN.', 'foogallery' ),
-				'type'    => 'checkbox',
-				'tab'     => 'advanced',
+				'id'    => 'attachment_id_attribute',
+				'type'  => 'radio',
+				'title' => __( 'Item ID Attribute', 'foogallery' ),
+				'desc'  => __( 'Each item has an ID attribute which identifies itself. Changing the attribute will change what is used for deeplinking.', 'foogallery' ),
+				'choices' => array(
+					'data-attachment-id' => __( 'data-attachment-id', 'foogallery' ),
+					'data-id' => __( 'data-id', 'foogallery' ),
+				),
+				'tab'   => 'advanced'
 			);
+
 			//endregion Advanced Tab
+
+			//region Custom JS & CSS
+			$tabs['custom_assets'] = __( 'Custom JS & CSS', 'foogallery' );
+
+			$custom_assets = get_option( FOOGALLERY_OPTION_CUSTOM_ASSETS );
+			$custom_style_extra = '';
+			if ( is_array( $custom_assets ) && array_key_exists( 'style', $custom_assets ) ) {
+				$custom_style_extra = '<br /><a target="_blank" href="' . $custom_assets['style'] . '">' . __( 'Open Custom Stylesheet', 'foogallery' ) . '</a>';
+			}
+			$custom_script_extra = '';
+			if ( is_array( $custom_assets ) && array_key_exists( 'script', $custom_assets ) ) {
+				$custom_script_extra = '<br /><a target="_blank" href="' . $custom_assets['script'] . '">' . __( 'Open Custom Script', 'foogallery' ) . '</a>';
+			}
+
+			$custom_js = foogallery_get_setting( 'custom_js', '' );
+			if ( !empty( $custom_js ) && empty( $custom_script_extra ) ) {
+				$custom_script_extra = '<br /><strong>' . __( 'There was a problem generating the custom JS file! This is usually caused by a permissions issue on your server.', 'foogallery' ) . '</strong>';
+			}
+
+			$custom_css = foogallery_get_setting( 'custom_css', '' );
+			if ( !empty( $custom_css ) && empty( $custom_style_extra ) ) {
+				$custom_style_extra = '<br /><strong>' . __( 'There was a problem generating the custom CSS file! This is usually caused by a permissions issue on your server.', 'foogallery' ) . '</strong>';
+			}
+
+			$settings[] = array(
+				'id'      => 'custom_js',
+				'title'   => __( 'Custom Javascript', 'foogallery' ),
+				'desc'    => __( 'Custom Javascript that will be added to the page when a gallery is rendered.', 'foogallery' ) . $custom_script_extra,
+				'type'    => 'textarea',
+				'tab'     => 'custom_assets',
+				'default' => ''
+			);
+
+			$settings[] = array(
+				'id'      => 'custom_css',
+				'title'   => __( 'Custom Stylesheet', 'foogallery' ),
+				'desc'    => __( 'Custom CSS that will be added to the page when a gallery is rendered.', 'foogallery' ) . $custom_style_extra,
+				'type'    => 'textarea',
+				'tab'     => 'custom_assets',
+				'default' => ''
+			);
+			//endregion Custom JS & CSS
 
 			return apply_filters( 'foogallery_admin_settings_override', array(
 				'tabs'     => $tabs,
@@ -425,7 +565,7 @@ if ( ! class_exists( 'FooGallery_Admin_Settings' ) ) {
 		}
 
 		/**
-		 * AJAX endpoint for testing thumbnail generation using WPThumb
+		 * AJAX endpoint for testing thumbnail generation
 		 */
 		function ajax_thumb_generation_test() {
 			if ( check_admin_referer( 'foogallery_thumb_generation_test' ) ) {
@@ -479,6 +619,76 @@ if ( ! class_exists( 'FooGallery_Admin_Settings' ) ) {
 				_e('All traces of the plugin were removed from your system!', 'foogallery' );
 				die();
 			}
+		}
+
+		function generate_assets( $old_value, $value, $option) {
+			if ( !is_admin() ) {
+				return;
+			}
+
+			if ( !current_user_can( 'manage_options' ) ) {
+				return;
+			}
+
+			$custom_assets = array();
+
+			//check if we have saved any custom JS
+			$custom_js = foogallery_get_setting( 'custom_js', '' );
+			if ( !empty( $custom_js ) ) {
+				$custom_js = '/*
+* FooGallery Custom Javascript
+* This file is created by adding custom JS on FooGallery Settings page in wp-admin
+* Created : ' . date( 'j M Y, g:i a', time() ) . '
+*/
+
+'. $custom_js;
+				//generate script in upload folder
+				$script_url = $this->generate_custom_asset( 'custom.js', $custom_js );
+				if ( $script_url !== false ) {
+					$custom_assets['script'] = $script_url;
+				}
+			}
+
+			//check if we have saved any custom CSS
+			$custom_css = foogallery_get_setting( 'custom_css', '' );
+			if ( !empty( $custom_css ) ) {
+				$custom_css = '/*
+* FooGallery Custom CSS
+* This file is created by adding custom CSS on FooGallery Settings page in wp-admin
+* Created : ' . date( 'j M Y, g:i a', time() ) . '
+*/
+
+'. $custom_css;
+				//generate stylesheet in upload folder
+				$style_url = $this->generate_custom_asset( 'custom.css', $custom_css );
+				if ( $style_url !== false ) {
+					$custom_assets['style'] = $style_url;
+				}
+			}
+
+			//set another option with the details
+			if ( count( $custom_assets ) > 0 ) {
+				update_option( FOOGALLERY_OPTION_CUSTOM_ASSETS, $custom_assets );
+			} else {
+				delete_option( FOOGALLERY_OPTION_CUSTOM_ASSETS );
+			}
+		}
+
+		function generate_custom_asset( $filename, $contents ) {
+			$upload_dir = wp_upload_dir();
+			if ( !empty( $upload_dir['basedir'] ) ) {
+				$dir = trailingslashit( $upload_dir['basedir'] ) . 'foogallery/';
+
+				$fs = foogallery_wp_filesystem();
+				if ( false !== $fs ) {
+					$fs->mkdir( $dir ); // Make a new folder for storing our file
+					if ( $fs->put_contents( $dir . $filename, $contents, 0644 ) ) {
+						return set_url_scheme( trailingslashit( $upload_dir['baseurl'] ) . 'foogallery/' . $filename );
+					}
+				}
+			}
+
+			return false;
 		}
 	}
 }

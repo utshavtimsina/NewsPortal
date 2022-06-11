@@ -21,9 +21,9 @@ class Loco_admin_bundle_SetupController extends Loco_admin_bundle_BaseController
      * {@inheritdoc}
      */
     public function getHelpTabs(){
-        return array (
+        return  [
             __('Setup tab','loco-translate') => $this->viewSnippet('tab-bundle-setup'),
-        );
+        ];
     }
 
 
@@ -111,7 +111,7 @@ class Loco_admin_bundle_SetupController extends Loco_admin_bundle_BaseController
                 $n += count($files);
             }
             if( $n ){
-                $notices[] = sprintf( _n("One file can't be matched to a known set of strings","%s files can't be matched to a known set of strings",$n,'loco-translate'), number_format($n) );
+                $notices[] = sprintf( _n("%s file can't be matched to a known set of strings","%s files can't be matched to a known set of strings",$n,'loco-translate'), number_format_i18n($n) );
             }
         }
         
@@ -136,10 +136,10 @@ class Loco_admin_bundle_SetupController extends Loco_admin_bundle_BaseController
         
         // enable form to paste JSON config (via remote lookup)
         if( $this->get('json') ){
-            $fields = new Loco_mvc_HiddenFields( array(
+            $fields = new Loco_mvc_HiddenFields( [
                 'json-content' => '',
                 'version' => $info->Version,
-            ) );
+            ] );
             $fields->setNonce( 'json-'.$action );
             $this->set('jsonFields', $fields );
             
@@ -149,9 +149,9 @@ class Loco_admin_bundle_SetupController extends Loco_admin_bundle_BaseController
             // remote config is done via JavaScript
             $this->enqueueScript('setup');
             $apiBase = apply_filters( 'loco_api_url', 'https://localise.biz/api' );
-            $this->set('js', new Loco_mvc_ViewParams( array(
+            $this->set('js', new Loco_mvc_ViewParams( [
                 'apiUrl' => $apiBase.'/wp/'.strtolower( $bundle->getType() ),
-            ) ) );
+            ] ) );
             $doconf = true;
         }
         

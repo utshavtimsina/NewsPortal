@@ -6,7 +6,7 @@
 class Loco_fs_Revisions implements Countable/*, IteratorAggregate*/ {
     
     /**
-     * @var loco_fs_File
+     * @var Loco_fs_File
      */
     private $master;
     
@@ -32,7 +32,7 @@ class Loco_fs_Revisions implements Countable/*, IteratorAggregate*/ {
      * Paths to delete when object removed from memory
      * @var array
      */
-    private $trash = array();
+    private $trash = [];
     
 
     /**
@@ -140,13 +140,12 @@ class Loco_fs_Revisions implements Countable/*, IteratorAggregate*/ {
     }
 
 
-
     /**
      * @return array
      */
     public function getPaths(){
         if( is_null($this->paths) ){
-            $this->paths = array();
+            $this->paths = [];
             $regex = $this->getRegExp();
             $finder = new Loco_fs_FileFinder( $this->master->dirname() );
             $finder->setRecursive(false);
@@ -163,7 +162,6 @@ class Loco_fs_Revisions implements Countable/*, IteratorAggregate*/ {
     }
 
 
-    
     /**
      * Parse a file path into a timestamp
      * @param string
@@ -179,18 +177,17 @@ class Loco_fs_Revisions implements Countable/*, IteratorAggregate*/ {
     }
 
 
-
     /**
      * Get number of backups plus master
      * @return int
-     */    
+     */
+    #[ReturnTypeWillChange]
     public function count(){
         if( ! $this->length ){
             $this->length = 1 + count( $this->getPaths() );
         }
         return $this->length;
     }
-
 
 
     /**
@@ -204,24 +201,35 @@ class Loco_fs_Revisions implements Countable/*, IteratorAggregate*/ {
     }
 
 
-
     /**
-     * Test whether at least one backup file exists on disk.
-     * @return bool
-     *
-    public function sniff(){
-        $found = false;
-        if( $dir = opendir( $this->master->dirname() ) ){
-            $regex = $this->getRegExp();
-            while( $f = readdir($dir) ){
-                if( preg_match($regex,$f) ){
-                    $found = true;
-                    break;
-                }
+     * Execute backup of current file if enabled in settings.
+     * @param Loco_api_WordPressFileSystem Authorized file system
+     * @return Loco_fs_File|null backup file if saved
+     */
+    public function rotate( Loco_api_WordPressFileSystem $api ){
+        $backup = null;
+        $pofile = $this->master;
+        $num_backups = Loco_data_Settings::get()->num_backups;
+        if( $num_backups ){
+            // Attempt backup, but return null on failure
+            try {
+                $api->authorizeCopy($pofile);
+                $backup = $this->create();
             }
-            closedir($dir);
+            catch( Exception $e ){
+                Loco_error_AdminNotices::debug( $e->getMessage() );
+                $message = __('Failed to create backup file in "%s". Check file permissions or disable backups','loco-translate');
+                Loco_error_AdminNotices::warn( sprintf( $message, $pofile->getParent()->basename() ) );
+            }
+            // prune operation in separate catch block as error would be misleading
+            try {
+                $this->prune($num_backups);
+            }
+            catch( Exception $e ){
+                Loco_error_AdminNotices::debug('Failed to prune backup files: '.$e->getMessage() );
+            }
         }
-        return $found;
-    }*/
+        return $backup;
+    }
 
 }

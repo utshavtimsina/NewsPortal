@@ -1,7 +1,7 @@
 <?php
 /**
  * Settings Class
- * 
+ *
  * @package Corona
  */
 namespace CoderExpert\Corona;
@@ -18,52 +18,52 @@ class Shortcode {
     }
     public static function scripts( $hook ){
         $suffix = ! ( defined('CORONA_DEV') && CORONA_DEV ) ? '.min' : '';
-        wp_register_style( 'ce-corona', 
-            CE_CORONA_ASSETS . 'css/corona.css', [], 
-            \filemtime( CE_CORONA_PATH . 'assets/css/corona.css' ), 'all' 
+        wp_register_style( 'ce-corona',
+            CE_CORONA_ASSETS . 'css/corona.css', [],
+            \filemtime( CE_CORONA_PATH . 'assets/css/corona.css' ), 'all'
         );
-        wp_register_style( 'ce-corona-wp-widget', 
-            CE_CORONA_ASSETS . 'css/corona-wp-widget.css', [], 
-            \filemtime( CE_CORONA_PATH . 'assets/css/corona-wp-widget.css' ), 'all' 
+        wp_register_style( 'ce-corona-wp-widget',
+            CE_CORONA_ASSETS . 'css/corona-wp-widget.css', [],
+            \filemtime( CE_CORONA_PATH . 'assets/css/corona-wp-widget.css' ), 'all'
         );
-        wp_register_script( 'ce-corona-jcountto', 
-            CE_CORONA_ASSETS . 'js/jquery-countTo.js', 
-            [ 'jquery' ], 
-            \filemtime( CE_CORONA_PATH . 'assets/js/jquery-countTo.js' ), true 
+        wp_register_script( 'ce-corona-jcountto',
+            CE_CORONA_ASSETS . 'js/jquery-countTo.js',
+            [ 'jquery' ],
+            \filemtime( CE_CORONA_PATH . 'assets/js/jquery-countTo.js' ), true
         );
-        wp_register_script( 'ce-corona-wp-widget', 
-            CE_CORONA_ASSETS . 'js/widget'. $suffix .'.js', 
-            [ 'jquery', 'ce-corona-jcountto' ], 
-            \filemtime( CE_CORONA_PATH . 'assets/js/widget'. $suffix .'.js' ), true 
+        wp_register_script( 'ce-corona-wp-widget',
+            CE_CORONA_ASSETS . 'js/widget'. $suffix .'.js',
+            [ 'jquery', 'ce-corona-jcountto' ],
+            \filemtime( CE_CORONA_PATH . 'assets/js/widget'. $suffix .'.js' ), true
         );
-        wp_register_script( 'ce-corona', 
-            CE_CORONA_ASSETS . 'js/corona'. $suffix .'.js', 
-            [ 'jquery', 'wp-i18n', 'wp-components' ], 
-            \filemtime( CE_CORONA_PATH . 'assets/js/corona'. $suffix .'.js' ), true 
+        wp_register_script( 'ce-corona',
+            CE_CORONA_ASSETS . 'js/corona'. $suffix .'.js',
+            [ 'jquery', 'wp-i18n', 'wp-components' ],
+            \filemtime( CE_CORONA_PATH . 'assets/js/corona'. $suffix .'.js' ), true
         );
 
-        wp_register_style( 'ce-elementor-country-corona', 
-			CE_CORONA_ASSETS . 'css/corona-countrywise.css', [], 
-			\filemtime( CE_CORONA_PATH . 'assets/css/corona-countrywise.css' ), 'all' 
+        wp_register_style( 'ce-elementor-country-corona',
+			CE_CORONA_ASSETS . 'css/corona-countrywise.css', [],
+			\filemtime( CE_CORONA_PATH . 'assets/css/corona-countrywise.css' ), 'all'
 		);
-		wp_register_script( 'ce-elementor-corona-nformat', 
-			CE_CORONA_ASSETS . 'js/ce-numberformat.js', 
-			[ 'jquery' ], 
-			\filemtime( CE_CORONA_PATH . 'assets/js/ce-numberformat.js' ), true 
+		wp_register_script( 'ce-elementor-corona-nformat',
+			CE_CORONA_ASSETS . 'js/ce-numberformat.js',
+			[ 'jquery' ],
+			\filemtime( CE_CORONA_PATH . 'assets/js/ce-numberformat.js' ), true
 		);
-		wp_register_script( 'ce-elementor-country-corona', 
-			CE_CORONA_ASSETS . 'js/countrywise'. $suffix .'.js', 
-			[ 'jquery', 'wp-i18n', 'ce-elementor-corona-nformat' ], 
-			\filemtime( CE_CORONA_PATH . 'assets/js/countrywise'. $suffix .'.js' ), true 
+		wp_register_script( 'ce-elementor-country-corona',
+			CE_CORONA_ASSETS . 'js/countrywise'. $suffix .'.js',
+			[ 'jquery', 'wp-i18n', 'ce-elementor-corona-nformat' ],
+			\filemtime( CE_CORONA_PATH . 'assets/js/countrywise'. $suffix .'.js' ), true
         );
-		wp_register_style( 'cec-graph', 
-			CE_CORONA_ASSETS . 'css/cegraph.css', [], 
+		wp_register_style( 'cec-graph',
+			CE_CORONA_ASSETS . 'css/cegraph.css', [],
 			\filemtime( CE_CORONA_PATH . 'assets/css/cegraph.css' ), 'all'
         );
-		wp_register_script( 'cec-graph', 
-			CE_CORONA_ASSETS . 'js/cegraph'. $suffix .'.js', 
-			[ 'jquery', 'ce-elementor-corona-nformat' ], 
-			\filemtime( CE_CORONA_PATH . 'assets/js/cegraph'. $suffix .'.js' ), true 
+		wp_register_script( 'cec-graph',
+			CE_CORONA_ASSETS . 'js/cegraph'. $suffix .'.js',
+			[ 'jquery', 'ce-elementor-corona-nformat' ],
+			\filemtime( CE_CORONA_PATH . 'assets/js/cegraph'. $suffix .'.js' ), true
         );
         wp_set_script_translations( 'ce-corona', 'ce-corona', plugin_dir_path( CE_CORONA_FILE ) . 'languages' );
         self::coronaTableTranslate();
@@ -91,9 +91,10 @@ class Shortcode {
             'tests_per_m'     => __( 'Tests/1M', 'ce-corona' ),
             'case_per_m'      => __( 'Case/1M', 'ce-corona' ),
             'deaths_per_m'    => __( 'Deaths/1M', 'ce-corona' ),
+            'population'      => __( 'Population', 'ce-corona' ),
             'date'            => __( 'Date', 'ce-corona' ),
             'type_for_search' => __( 'Type for search...', 'ce-corona' ),
-            'short_months'          => array(
+            'short_months'    => array(
                 __( 'Jan', 'ce-corona' ),
                 __( 'Feb', 'ce-corona' ),
                 __( 'Mar', 'ce-corona' ),
@@ -166,7 +167,7 @@ class Shortcode {
             'global_data'     => true,
             'lastupdate'      => true,
             'countries'       => '',
-            'columns'         => 'cases,todayCases,deaths,todayDeaths,recovered,active,critical,tests,casesPerOneMillion,deathsPerOneMillion,testsPerOneMillion',
+            'columns'         => 'cases,todayCases,deaths,todayDeaths,recovered,active,critical,tests,casesPerOneMillion,deathsPerOneMillion,testsPerOneMillion, population',
             'table_style'     => 'default',
             'button_position' => 'above_data_table',
             'stats_title'     => __( 'Total Stats', 'ce-corona' ),
@@ -264,7 +265,7 @@ class Shortcode {
                 if( $country_name == 'true' || $flag == "true" || $isUpdate ) {
                     $output .= '<div class="cec-elementor-country">';
                         if( $flag == "true" ) {
-                            $output .= '<img class="cec-elementor-country-flag" src="https://raw.githubusercontent.com/NovelCOVID/API/master/assets/flags/unknow.png" alt="'. self::countries()[ $country_code ] .'" />';
+                            $output .= '<img class="cec-elementor-country-flag" src="https://raw.githubusercontent.com/disease-sh/API/master/public/assets/img/flags/unknown.png" alt="'. self::countries()[ $country_code ] .'" />';
                         }
                         if( $country_name == 'true' || $isUpdate ) {
                             $output .= '<div class="cec-elementor-country-name-wrapper">';

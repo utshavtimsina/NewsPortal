@@ -137,14 +137,14 @@
 
 		helper : {
 			decode: function (str) {
-				return JSON.parse(window.atob(str));
+				return JSON.parse(decodeURIComponent(window.atob(str)));
 			},
 			encode: function (obj) {
-				return window.btoa(JSON.stringify(obj));
+				return window.btoa(encodeURIComponent(JSON.stringify(obj)));
 			},
 			settings : function (elm) {
-				return JSON.parse(window.atob(elm.data('settings')));
-			}
+				return JSON.parse(decodeURIComponent(window.atob(elm.data('settings'))));
+			},
 		},
 
 		add_action : function (name, callback) {
@@ -326,6 +326,7 @@
 					if (
 						!list.is( yotuwp.player.current.list )
 					) {
+
 						settings.player['enablejsapi'] = 1;
 						var player_setting = settings.player,
 							delete_keys = ['scrolling', 'width', 'mode', 'playing', 'playing_description'];
@@ -333,6 +334,13 @@
 						delete_keys.map(function (key){
 							if( typeof player_setting[key] !== 'undefined') delete player_setting[key];
 						});
+
+						player_setting['origin'] = document.location.protocol+"//"+document.location.hostname;
+				
+                        player_setting['enablejsapi'] = 1;
+                        player_setting['iv_load_policy'] = 3;
+                        player_setting['widgetid'] = 3;
+
 						
 						yotuwp.player.current.list = list;
 
@@ -509,10 +517,21 @@
 			},
 
 			status : function (e){
+
 				var status  = e.data,
-				    wrp     = $(e.target.a).closest('.yotu-playlist'),
-				    player  = wrp.data('yotu'),
+				    wrp     = null,
+				    player  = '',
 				    playing = e.target.getVideoData();
+
+			    //parse element for getting wrapper tag
+			    Object.keys(e.target).map(function (k){
+			    	let prop = e.target[k];
+			    	if( prop.tagName == 'IFRAME' ) {
+			    		wrp = $(e.target[k]).closest('.yotu-playlist');
+			    	}
+			    });
+
+			    player  = wrp.data('yotu');
 				
 				if(typeof playing['video_id'] === 'undefined') return;
 
@@ -682,6 +701,7 @@
 			events : function (e){
 				e.preventDefault();
 				var target = $(e.target);
+
 				yotuwp.player.play(
 					(typeof target.data('videoid') == 'undefined') ? target.closest('.yotu-video').data('videoid') : target.data('videoid'),
 					target.closest('.yotu-playlist')

@@ -716,6 +716,7 @@ HTML;
 			'about_line_1' => __( 'In March, after COVID-19 had begun to overwhelm small and large companies alike, several of our clients were asking for a way to quickly announce their closures and updates to their clients and customers. We’re a small digital agency based in Hamilton, Ontario that regularly creates WordPress websites for our clients – so we quickly wrote a plugin that served the need, which has now become the plugin you see before you.', $this->parent->_text_domain ),
 			'about_line_2' => __( 'It’s deliberately simple, and meant to be a plugin that you will remove in the future – without changing your theme, stylesheets or overall configuration of your WordPress website.', $this->parent->_text_domain ),
 			'about_line_3' => __( 'This plugin is free and will remain free forever, but if you have a moment, donate to causes that are <a href="https://www.canadahelps.org/en/donate-to-coronavirus-outbreak-response/" target="_blank">helping victims and families of victims</a>. Everything helps.', $this->parent->_text_domain ),
+			// CALL TO LIKE OUR FACEBOOK PAGE
 			'about_line_4' => __( '– Team <a href="http://orchestrated.ca" target="_blank">Orchestrated</a>', $this->parent->_text_domain ),
 			'world' => __( 'World', $this->parent->_text_domain ),
 			'just_now' => __( 'just now', $this->parent->_text_domain ),

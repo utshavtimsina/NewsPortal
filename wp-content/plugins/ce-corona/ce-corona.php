@@ -7,7 +7,7 @@
  * Author URI:      https://mukul.me
  * Text Domain:     ce-corona
  * Domain Path:     /languages
- * Version:         0.6.2
+ * Version:         0.7.0
  *
  * @package         Corona
  */
@@ -17,7 +17,7 @@ defined( 'ABSPATH' ) or die( 'No script kiddies please!' );
  * Defines Constants for Future use
  */
 define( 'CE_CORONA_FILE', __FILE__ );
-define( 'CE_CORONA_VERSION', '0.6.2' );
+define( 'CE_CORONA_VERSION', '0.7.0' );
 define( 'CE_CORONA_URL', plugin_dir_url( CE_CORONA_FILE ) );
 define( 'CE_CORONA_PATH', plugin_dir_path( CE_CORONA_FILE ) );
 define( 'CE_CORONA_ASSETS', CE_CORONA_URL . 'assets/' );

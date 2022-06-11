@@ -39,11 +39,17 @@ class Loco_Locale implements JsonSerializable {
     private $_name;
 
     /**
-     * Cache of raw plural data 
-     * @var array
+     * Plural equation expressed in terms of "n"
+     * @var string|null
+     */
+    private $pluraleq;
+    
+    /**
+     * Cache of plural forms mapped optionally to CLDR mnemonic tags 
+     * @var array|null
      */
     private $plurals;
-
+    
     /**
      * Validity cache
      * @var bool
@@ -76,14 +82,18 @@ class Loco_Locale implements JsonSerializable {
      * @param string
      */
     public function __construct( $lang = '', $region = '', $variant = '' ){
+        if( 1 == func_num_args() && isset($lang[3]) ){
+            throw new BadMethodCallException('Did you mean Loco_Locale::parse('.var_export($lang,1).') ?');
+        }
         $this->tag = compact('lang','region','variant');
     }
 
 
-
     /**
-     * @internal
      * Allow read access to subtags
+     * @internal 
+     * @param string
+     * @return string
      */
     public function __get( $t ){
         return isset($this->tag[$t]) ? $this->tag[$t] : '';
@@ -91,8 +101,11 @@ class Loco_Locale implements JsonSerializable {
 
 
     /**
-     * @internal
      * Allow write access to subtags
+     * @internal
+     * @param string
+     * @param string
+     * @return void
      */
     public function __set( $t, $s ){
         if( isset($this->tag[$t]) ){
@@ -104,11 +117,12 @@ class Loco_Locale implements JsonSerializable {
 
     /**
      * Set subtags as produced from loco_parse_wp_locale
+     * @param string[]
      * @return Loco_Locale
      */
     public function setSubtags( array $tag ){
         $this->valid = false;
-        $default = array( 'lang' => '', 'region' => '', 'variant' => '' );
+        $default = [ 'lang' => '', 'region' => '', 'variant' => '' ];
         // disallow setting of unsupported tags
         if( $bad = array_diff_key($tag, $default) ){
             throw new Loco_error_LocaleException('Unsupported subtags: '.implode(',',$bad) );
@@ -119,10 +133,10 @@ class Loco_Locale implements JsonSerializable {
             throw new Loco_error_LocaleException('Locale must have a language');
         }
         // no UN codes in Wordpress
-        if( is_numeric($tag['region']) ){
+        if( preg_match('/^\\d+$/',$tag['region']) ){
             throw new Loco_error_LocaleException('Numeric regions not supported');
         }
-        // single, scalar variant. Only using for Formal german currently.
+        // non-standard variant code. e.g. formal/informal
         if( is_array($tag['variant']) ){
             $tag['variant'] = implode('_',$tag['variant']);
         }
@@ -171,22 +185,27 @@ class Loco_Locale implements JsonSerializable {
 
 
     /**
-     * Get stored name in current display language.
-     * Note that no dynamic translation of English name is performed, but can be altered with loco_parse_locale filter
+     * @param bool whether to get name in current display language
      * @return string | null
      */    
-    public function getName(){
-        if( $name = $this->name ){
-            // use canonical native name only when current language matches
-            // deliberately not matching whole tag such that fr_CA would show native name of fr_FR
-            if( $_name = $this->getNativeName() ){
-                $locale = self::parse( function_exists('get_user_locale') ? get_user_locale() : get_locale() );
-                if( $this->lang === $locale->lang ){
-                    $name = $_name;
-                }
+    public function getName( $translate = true ){
+        $name = $this->name;
+        // use canonical native name only when current language matches
+        // deliberately not matching whole tag such that fr_CA would show native name of fr_FR
+        if( $translate ){
+            $locale = self::parse( function_exists('get_user_locale') ? get_user_locale() : get_locale() );
+            if( $this->lang === $locale->lang && $this->_name ){
+                $name = $this->_name;
             }
+            /*/ Note that no dynamic translation of English name is performed, but can be filtered with loco_parse_locale
+            else {
+                $name = __($name,'loco-translate-languages');
+            }*/
+        }
+        if( is_string($name) && '' !== $name ){
             return $name;
         }
+        return null;
     }
 
 
@@ -195,9 +214,11 @@ class Loco_Locale implements JsonSerializable {
      * @return string | null
      */    
     public function getNativeName(){
-        if( $name = $this->_name ){
+        $name = $this->_name;
+        if( is_string($name) && '' !== $name ){
             return $name;
         }
+        return null;
     }
 
 
@@ -207,7 +228,7 @@ class Loco_Locale implements JsonSerializable {
     public function getIcon(){
         $icon = $this->icon;
         if( is_null($icon) ){
-            $tag = array();
+            $tag = [];
             if( ! $this->tag['lang'] ){
                 $tag[] = 'lang lang-zxx';
             }
@@ -224,6 +245,7 @@ class Loco_Locale implements JsonSerializable {
 
 
     /**
+     * @param string CSS icon name
      * @return Loco_Locale
      */
     public function setIcon( $css ){
@@ -238,6 +260,8 @@ class Loco_Locale implements JsonSerializable {
 
 
     /**
+     * @param string
+     * @param string
      * @return Loco_Locale
      */
     public function setName( $english_name, $native_name = '' ){
@@ -249,6 +273,7 @@ class Loco_Locale implements JsonSerializable {
 
     /**
      * Test whether locale is valid
+     * @return bool
      */    
     public function isValid(){
         if( is_null($this->valid) ){
@@ -260,15 +285,17 @@ class Loco_Locale implements JsonSerializable {
 
     /**
      * Resolve this locale's "official" name from WordPress's translation api
+     * @param Loco_api_WordPressTranslations 
      * @return string English name currently set
      */    
     public function fetchName( Loco_api_WordPressTranslations $api ){
         $tag = (string) $this;
         // pull from WordPress translations API if network allowed
-        if( $locale = $api->getLocale($tag) ){
-            $this->setName( $locale->getName(), $locale->getNativeName() );
+        $locale = $api->getLocale($tag);
+        if( $locale ){
+            $this->setName( $locale->getName(false), $locale->getNativeName() );
         }
-        return $this->getName();
+        return $this->getName(false);
     }
 
 
@@ -277,7 +304,6 @@ class Loco_Locale implements JsonSerializable {
      * @return string English name currently set
      */
     public function buildName(){
-        $names = array();
         // should at least have a language or not valid
         if( $this->isValid() ){
             $code = $this->tag['lang'];
@@ -309,6 +335,7 @@ class Loco_Locale implements JsonSerializable {
 
     /**
      * Ensure locale has a label, even if it has to fall back to language code or error
+     * @param Loco_api_WordPressTranslations
      * @return string
      */
     public function ensureName( Loco_api_WordPressTranslations $api ){
@@ -332,61 +359,55 @@ class Loco_Locale implements JsonSerializable {
     /**
      * @return array
      */
+    #[ReturnTypeWillChange]
     public function jsonSerialize(){
         $a = $this->tag;
         $a['label'] = $this->getName();
         // plural data expected by editor
         $p = $this->getPluralData();
         $a['pluraleq'] = $p[0];
-        $a['plurals'] = $p[1];
         $a['nplurals'] = count($p[1]);
-        
+        $a['plurals'] = $this->getPluralForms();
+        // tone setting may used by some external translation providers
+        $a['tone'] = $this->getFormality();
         return $a;
     }
 
 
-    /**
-     * Get plural data with translated forms
-     * @internal
-     * @return array [ (string) equation, (array) forms ]
-     */
-    public function getPluralData(){
-        $cache = $this->plurals;
-        if( ! $cache ){
-            $lc = $this->lang;
+    private function getPluralData(){
+        if( is_null($this->plurals) ){
+            $lc = strtolower($this->lang);
             $db = Loco_data_CompiledData::get('plurals');
             $id = $lc && isset($db[$lc]) ? $db[$lc] : 0;
-            $cache = $this->setPlurals( $db[''][$id] );
+            list( $this->pluraleq, $this->plurals ) = $db[''][$id];
         }
-        return $cache;
+        return [ $this->pluraleq, $this->plurals ];
     }
 
 
     /**
-     * @return int
+     * Get translated plural form labels
+     * @return string[]
      */
-    public function getPluralCount(){
-        $raw = $this->getPluralData();
-        return count( $raw[1] );
-    }
-
-
-
-    /**
-     * @return array
-     */
-    private function setPlurals( array $raw ){
-        $raw = apply_filters( 'loco_locale_plurals', $raw, $this );
-        // handle languages with no plural forms, where n is always 0
-        if( ! isset($raw[1][1]) ){
-            // Translators: Plural category for languages that have no plurals
-            $raw[1] = array( _x('All forms','Plural category','loco-translate') );
-            $raw[0] = '0';
+    public function getPluralForms(){
+        list( , $plurals ) = $this->getPluralData();
+        $nplurals = count($plurals);
+        // Languages with no plural forms, where n always yields 0. The UI doesn't show a label for this.
+        if( 1 === $nplurals ){
+            return [ 'All' ];
         }
-        // else translate all implemented plural forms
+        // Germanic plurals can show singular/plural as per source string text boxes
+        // Note that french style plurals include n=0 under the "Single", but we will show "Single (0,1)"
+        if( 2 === $nplurals ){
+            $l10n = [ 
+                'one' => _x('Single','Editor','loco-translate'), 
+                'other' => _x('Plural',"Editor",'loco-translate'),
+            ];
+        }
+        // else translate all implemented plural forms and show sample numbers if useful:
         // for meaning of categories, see http://cldr.unicode.org/index/cldr-spec/plural-rules
         else {
-            $forms = array(
+            $l10n = [
                 // Translators: Plural category for zero quantity
                 'zero' => _x('Zero','Plural category','loco-translate'),
                 // Translators: Plural category for singular quantity
@@ -399,17 +420,42 @@ class Loco_Locale implements JsonSerializable {
                 'many' => _x('Many','Plural category','loco-translate'),
                 // Translators: General plural category not covered by other forms
                 'other' => _x('Other','Plural category','loco-translate'),
-            );
-            foreach( $raw[1] as $k => $v ){
-                if( isset($forms[$v]) ){
-                    $raw[1][$k] = $forms[$v];
-                }
+            ];
+        }
+        // process labels to be shown in editor tab, appending sample values of `n` if useful
+        $labels = [];
+        foreach( $plurals as $sample => $tag ){
+            if( is_int($sample) ){
+                $sample = sprintf('%u',$sample);
+            }
+            // if CLDR tag is to be used we'll need to translate it
+            if( array_key_exists($tag,$l10n) ){
+                $name = $l10n[$tag];
+            }
+            else {
+                $name = $tag;
+            }
+            // show just samples if no name
+            if( '' === $name ){
+                $labels[] = $sample;
+            }
+            // show just name if label is numeric, or samples are redundant
+            else if(
+                preg_match('/\\d/',$name)  ||
+                ( 'one' === $tag && '1' === $sample ) ||
+                ( 'two' === $tag && '2' === $sample ) ||
+                ( 'zero' === $tag && '0' === $sample ) ||
+                ( 'other' === $tag && 2 === $nplurals )
+            ){
+                $labels[] = $name;
+            }
+            // else both - most common for standard CLDR forms
+            else {
+                $labels[] = sprintf('%s (%s)', $name, $sample );
             }
         }
-        $this->plurals = $raw;
-        return $raw;
+        return $labels;
     }
-
 
 
     /**
@@ -422,44 +468,107 @@ class Loco_Locale implements JsonSerializable {
     }
 
 
-
     /**
      * Apply PO style Plural-Forms header.
      * @param string e.g. "nplurals=2; plural=n != 1;"
-     * @return Loco_Locale
+     * @return void
      */
     public function setPluralFormsHeader( $str ){
-        if( ! preg_match('/^nplurals=(\\d);\s*plural=([ +\\-\\/*%!=<>|&?:()n0-9]+);?$/', $str, $match ) ){
+        if( ! preg_match('#^nplurals=(\\d);\\s*plural=([-+/*%!=<>|&?:()n\\d ]+);?$#', $str, $match ) ){
             throw new InvalidArgumentException('Invalid Plural-Forms header, '.json_encode($str) );
         }
-        $cache = $this->getPluralData();
-        $exprn = $match[2];
-        // always alter if equation differs
-        if( $cache[0] !== $exprn ){
-            $this->plurals[0] = $exprn;
-            // alter number of forms if changed
-            $nplurals = max( 1, (int) $match[1] );
-            if( $nplurals !== count($cache[1]) ){
-                // named forms must also change, but Plural-Forms cannot contain this information
-                // as a cheat, we'll assume first form always "one" and last always "other"
-                for( $i = 1; $i < $nplurals; $i++ ){
-                    $name = 1 === $i ? 'one' : sprintf('Plural %u',$i);
-                    $forms[] = $name;
-                }
-                $forms[] = 'other';
-                $this->setPlurals( array($exprn,$forms) );
-            }
+        $nplurals = (int) $match[1];
+        $pluraleq = trim( $match[2],' ');
+        // single form requires no further inspection
+        if( 2 > $nplurals ){
+            $this->pluraleq = '0';
+            $this->plurals = ['other'];
+            return;
         }
-        return $this;
+        // Override new equation in all cases
+        $previous = $this->getPluralData()[0];
+        $this->pluraleq = $pluraleq;
+        // quit asap if plural forms being set aren't changing anything
+        if( $nplurals === count($this->plurals) && self::hashPlural($previous) === self::hashPlural($pluraleq) ){
+            return;
+        }
+        // compile sample keys as per built-in CLDR rule for this language
+        $keys = [];
+        $formula = new Plural_Forms($pluraleq);
+        $ns = [0,1,2,3,4,5,6,7,8,9,10,11,12,13,20,21,22,30,31,32,100,101,102,103,104,111,200,201,202,301,302];
+        for( $i = 0; $i < $nplurals; $i++ ){
+            $sample = [];
+            $suffix = '';
+            foreach( $ns as $j => $n ){
+                if( is_null($n) || $formula->execute($n) !== $i ){
+                    continue;
+                }
+                $ns[$j] = null;
+                if( array_key_exists(2,$sample) ){
+                    $suffix = "\xE2\x80\xA6";
+                    break;
+                }
+                else {
+                    $sample[] = $n;
+                }
+            }
+            $keys[] = implode(',',$sample).$suffix;
+        }
+        // use mnemonic tag only if it matches the default (CLDR) tag for the current language
+        if( array_keys($this->plurals) !== $keys ) {
+            // exception when two forms only and the first accepts n=1 and second n=2
+            if( 2 === $nplurals && 0 === $formula->execute(1) && 1 === $formula->execute(2) ){
+                $tags = ['one','other'];
+            }
+            // blanking CLDR tags means only samples will be used as labels
+            else {
+                $tags = array_fill(0,$nplurals,'');
+                // Translators: Shown when a PO file's Plural-Forms header has a different formula from the Unicode CLDR rules
+                Loco_error_AdminNotices::info( __('Plural forms differ from Loco Translate\'s built in rules for this language','loco-translate') );
+            }
+            // set new plural forms
+            $this->plurals = array_combine($keys,$tags);
+        }
     }
 
 
+    /**
+     * Crude normalizer for a plural equation such that similar formulae can be compared.
+     * @param string original plural equation
+     * @return string signature for comparison
+     */
+    private static function hashPlural( $str ){
+        return trim( str_replace([' ','<>'],['','!='],$str), '()' );
+    }
+
 
     /**
-     * @return string
+     * Get formality setting, whether implied or explicit.
+     * @return string either "", "formal" or "informal"
      */
-    public function exportJson(){
-        return json_encode( $this->jsonSerialize() );
+    public function getFormality(){
+        $value = '';
+        $tag = $this->__toString();
+        $variant = $this->variant;
+        if( '' === $variant ){
+            // if a formal variant exists, tone may be implied informal
+            $d = Loco_data_CompiledData::get('locales');
+            if( $d->offsetExists($tag.'_formal') ){
+                if( ! $d->offsetExists($tag.'_informal') ) {
+                    $value = 'informal';
+                }
+            }
+            // if an informal variant exists, tone may be implied formal
+            else if( $d->offsetExists($tag.'_informal') ){
+                if( ! $d->offsetExists($tag.'_formal') ) {
+                    $value = 'formal';
+                }
+            }
+        }
+        else if( 'formal' === $variant || 'informal' === $variant ){
+            $value = $variant;
+        }
+        return apply_filters('loco_locale_formality',$value,$tag);
     }
 
 }
@@ -468,6 +577,6 @@ class Loco_Locale implements JsonSerializable {
 
 // Depends on compiled library
 if( ! function_exists('loco_parse_wp_locale') ){
-    loco_include('lib/compiled/locales.php');
+    loco_require_lib('compiled/locales.php');
 }
 

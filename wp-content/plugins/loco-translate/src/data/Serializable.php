@@ -37,7 +37,7 @@ abstract class Loco_data_Serializable extends ArrayObject {
     /**
      * {@inheritdoc}
      */
-    public function __construct( array $data = array() ){
+    public function __construct( array $data = [] ){
         $this->setFlags( ArrayObject::ARRAY_AS_PROPS );
         parent::__construct( $data );
         $this->dirty = (bool) $data;
@@ -109,6 +109,7 @@ abstract class Loco_data_Serializable extends ArrayObject {
      * {@inheritdoc}
      * override so we can set dirty flag
      */
+    #[ReturnTypeWillChange]
     public function offsetSet( $prop, $value ){
         if( ! isset($this[$prop]) || $value !== $this[$prop] ){
             parent::offsetSet( $prop, $value );
@@ -121,6 +122,7 @@ abstract class Loco_data_Serializable extends ArrayObject {
      * {@inheritdoc}
      * override so we can set dirty flag
      */
+    #[ReturnTypeWillChange]
     public function offsetUnset( $prop ){
         if( isset($this[$prop]) ){
             parent::offsetUnset($prop);
@@ -163,12 +165,12 @@ abstract class Loco_data_Serializable extends ArrayObject {
      * @return array
      */
     protected function getSerializable(){
-        return array (
+        return  [
             'c' => get_class($this),
             'v' => $this->getVersion(),
             'd' => $this->getArrayCopy(),
             't' => time(),
-        );
+        ];
     }
 
 
@@ -200,6 +202,36 @@ abstract class Loco_data_Serializable extends ArrayObject {
         $this->dirty = false;
         
         return $this;
-    }    
+    }
+
+
+    /**
+     * @param string
+     * @param mixed
+     * @param mixed[]
+     * @return mixed
+     */
+    protected static function cast( $prop, $value, array $defaults ){
+        if( ! array_key_exists($prop,$defaults) ){
+            throw new InvalidArgumentException('Invalid option, '.$prop );
+        }
+        $default = $defaults[$prop];
+        // cast to same type as default
+        if( is_bool($default) ){
+            $value = (bool) $value;
+        }
+        else if( is_int($default) ){
+            $value = (int) $value;
+        }
+        else if( is_array($default) ){
+            if( ! is_array($value) ){
+                $value = preg_split( '/[\\s,]+/', trim($value), -1, PREG_SPLIT_NO_EMPTY );
+            }
+        }
+        else {
+            $value = (string) $value;
+        }
+        return $value;
+    }
 
 }

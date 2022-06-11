@@ -248,7 +248,13 @@ class Loco_fs_FileWriter {
             Loco_error_AdminNotices::debug( sprintf('Unknown write failure via "%s" method; check %s',$fs->method,$path) );
             throw new Loco_error_WriteException( __('Failed to save file','loco-translate').': '.$file->basename() );
         }
-        
+        // trigger hook every time a file is written. This allows caches to be invalidated
+        try {
+            do_action( 'loco_file_written', $path );
+        }
+        catch( Exception $e ){
+            Loco_error_AdminNotices::add( Loco_error_Exception::convert($e) );
+        }
         return $this;
     }
 
@@ -268,7 +274,7 @@ class Loco_fs_FileWriter {
         // may have bypassed definition of FS_CHMOD_DIR
         $mode = defined('FS_CHMOD_DIR') ? FS_CHMOD_DIR : 0755;
         // find first ancestor that exists while building tree
-        $stack = array();
+        $stack = [];
         /* @var $parent Loco_fs_Directory */
         while( $parent = $here->getParent() ){
             array_unshift( $stack, $this->mapPath( $here->getPath() ) );
@@ -305,11 +311,17 @@ class Loco_fs_FileWriter {
         }
         // deny POT modification (pot_protect = 2)
         // this assumes that templates all have .pot extension, which isn't guaranteed. UI should prevent saving of wrongly files like "default.po"
-        if( 'pot' === $this->file->extension() &&  1 < $opts->pot_protect ){
+        if( 'pot' === strtolower($this->file->extension()) &&  1 < $opts->pot_protect ){
             throw new Loco_error_WriteException( __('Modification of POT (template) files is disallowed by the plugin settings','loco-translate') );
         }
+        // Deny list of executable file extensions, noting that specific actions may limit this further.
+        // Note that this ignores the base file name, so "php.pot" would be permitted, but "foo.php.pot" would not.
+        $exts = array_slice( explode('.', $this->file->basename() ), 1 );
+        if( preg_grep('/^php\\d*/i', $exts ) ){
+            throw new Loco_error_WriteException('Executable file extension disallowed .'.implode('.',$exts) );
+        }
         return $this;
-    } 
+    }
 
 
     /**

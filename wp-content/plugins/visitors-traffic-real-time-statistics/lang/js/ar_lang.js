@@ -1,5 +1,5 @@
 
 var ahc_visitors = 'الزوار';
-var ahcfree_visits = 'المشاهدات';
-var ahcfree_no_visits_visitors = 'عدد الزوار والزيارات';
-var ahcfree_no_visits = 'عدد الزيارات';
+var ahc_visits = 'المشاهدات';
+var ahc_no_visits_visitors = 'عدد الزوار والزيارات';
+var ahc_no_visits = 'عدد الزيارات';

@@ -19,23 +19,29 @@ class Loco_admin_file_MoveController extends Loco_admin_file_BaseController {
             $path = $file->getPath();
             $action = 'move:'.$path;
             // set up view now in case of late failure
-            $fields = new Loco_mvc_HiddenFields( array() );
+            $fields = new Loco_mvc_HiddenFields( [] );
             $fields->setNonce( $action );
             $fields['auth'] = 'move';
             $fields['path'] = $this->get('path');
             $this->set('hidden',$fields );
             // attempt move if valid nonce posted back
             while( $this->checkNonce($action) ){
+                $post = Loco_mvc_PostParams::get();
                 // Chosen location should be valid as a posted "dest" parameter
-                if( ! Loco_mvc_PostParams::get()->has('dest') ){
+                if( ! $post->has('dest') ){
                     Loco_error_AdminNotices::err('No destination posted');
                     break;
                 }
-                $target = new Loco_fs_LocaleFile( Loco_mvc_PostParams::get()->dest );
+                $target = new Loco_fs_LocaleFile( $post->dest );
                 $ext = $target->extension();
+                // could be a directory when we wanted the full path to the file
+                if( $target->isDirectory() ){
+                    Loco_error_AdminNotices::err('Enter the full path to the .'.$file->extension().' file, not the directory');
+                    break;
+                }
                 // primary file extension should only be permitted to change between po and pot
                 if( $ext !== $file->extension() && 'po' !== $ext && 'pot' !== $ext ){
-                    Loco_error_AdminNotices::err('Invalid file extension, *.po or *.pot only');
+                    Loco_error_AdminNotices::err('Invalid file extension, .po or .pot only');
                     break;
                 }
                 $target->normalize( loco_constant('WP_CONTENT_DIR') );
@@ -46,7 +52,7 @@ class Loco_admin_file_MoveController extends Loco_admin_file_BaseController {
                 $target_base = $target->filename();
                 $source_snip = strlen( $file->filename() );
                 // buffer all files to move to preempt write failures
-                $movable = array();
+                $movable = [];
                 $api = new Loco_api_WordPressFileSystem;
                 foreach( $files->expand() as $source ){
                     $suffix = substr( $source->basename(), $source_snip ); // <- e.g. "-backup.po~"
@@ -59,7 +65,7 @@ class Loco_admin_file_MoveController extends Loco_admin_file_BaseController {
                         Loco_error_AdminNotices::err('Failed to authorize relocation of '.$source->basename() );
                         break 2;
                     }
-                    $movable[] = array($source,$target);
+                    $movable[] = [$source,$target];
                 }
                 // commit moves. If any fail we'll have separated the files, which is bad
                 $count = 0;
@@ -76,11 +82,11 @@ class Loco_admin_file_MoveController extends Loco_admin_file_BaseController {
                 // flash messages for display after redirect
                 try {
                     if( $count ) {
-                        Loco_data_Session::get()->flash( 'success', sprintf( _n( 'File moved', '%u files moved', $total, 'loco-translate' ), $total ) );
+                        Loco_data_Session::get()->flash( 'success', sprintf( _n( '%s file moved', '%s files moved', $total, 'loco-translate' ), $total ) );
                     }
                     if( $total > $count ){
                         $diff = $total - $count;
-                        Loco_data_Session::get()->flash( 'error', sprintf( _n( 'One file could not be moved', '%u files could not be moved', $diff, 'loco-translate' ), $diff ) );
+                        Loco_data_Session::get()->flash( 'error', sprintf( _n( '%s file could not be moved', '%s files could not be moved', $diff, 'loco-translate' ), $diff ) );
                     }
                     Loco_data_Session::close();
                 }
@@ -88,7 +94,7 @@ class Loco_admin_file_MoveController extends Loco_admin_file_BaseController {
                     // tolerate session failure
                 }
                 // redirect to bundle overview
-                $href = Loco_mvc_AdminRouter::generate( $this->get('type').'-view', array( 'bundle' => $this->get('bundle') ) );
+                $href = Loco_mvc_AdminRouter::generate( $this->get('type').'-view', [ 'bundle' => $this->get('bundle') ] );
                 if( wp_redirect($href) ){
                     exit;
                 }
@@ -124,17 +130,17 @@ class Loco_admin_file_MoveController extends Loco_admin_file_BaseController {
         $custom = is_null($project) || $this->get('custom') || 'po' !== $file->extension() || ! $locale->isValid();
         // common page elements:
         $this->set('files',$files->expand() );
-        $this->set('title', sprintf( __('Move %s','loco-translate'), $file->filename() ) );
+        $this->setFileTitle($file,__('Move %s','loco-translate'));
         $this->enqueueScript('move');
         // set info for existing file location
         $content_dir = loco_constant('WP_CONTENT_DIR');
         $current = $file->getRelativePath($content_dir);
         $parent = new Loco_fs_LocaleDirectory( $file->dirname() );
         $typeId = $parent->getTypeId();
-        $this->set('current', new Loco_mvc_ViewParams(array(
+        $this->set('current', new Loco_mvc_ViewParams([
             'path' => $parent->getRelativePath($content_dir),
             'type' => $parent->getTypeLabel($typeId),
-        )) );
+        ]) );
         // moving files will require deletion permission on current file location
         // plus write permission on target location, but we don't know what that is yet.
         $fields = $this->prepareFsConnect('move',$current);
@@ -149,14 +155,14 @@ class Loco_admin_file_MoveController extends Loco_admin_file_BaseController {
         // establish valid locations for translation set, which may include current:
         $filechoice = $project->initLocaleFiles($locale);
         // start with current location so always first in list
-        $locations = array();
-        $locations[$typeId] = new Loco_mvc_ViewParams( array(
+        $locations = [];
+        $locations[$typeId] = new Loco_mvc_ViewParams( [
             'label' => $parent->getTypeLabel($typeId),
-            'paths' => array( new Loco_mvc_ViewParams( array(
+            'paths' => [ new Loco_mvc_ViewParams( [
                 'path' => $current,
                 'active' => true,
-            ) ) )
-        ) );
+            ] ) ]
+        ] );
         /* @var Loco_fs_File $pofile */
         foreach( $filechoice as $pofile ){
             $relpath = $pofile->getRelativePath($content_dir);
@@ -167,14 +173,14 @@ class Loco_admin_file_MoveController extends Loco_admin_file_BaseController {
             $parent = new Loco_fs_LocaleDirectory( $pofile->dirname() );
             $typeId = $parent->getTypeId();
             if( ! isset($locations[$typeId]) ){
-                $locations[$typeId] = new Loco_mvc_ViewParams( array(
+                $locations[$typeId] = new Loco_mvc_ViewParams( [
                     'label' => $parent->getTypeLabel($typeId),
-                    'paths' => array(),
-                ) );
+                    'paths' => [],
+                ] );
             }
-            $choice = new Loco_mvc_ViewParams( array(
+            $choice = new Loco_mvc_ViewParams( [
                 'path' => $relpath,
-            ) );
+            ] );
             $locations[$typeId]['paths'][] = $choice;
         }
         $this->set('locations', $locations );

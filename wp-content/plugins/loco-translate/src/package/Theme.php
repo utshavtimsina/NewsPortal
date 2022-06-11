@@ -14,10 +14,10 @@ class Loco_package_Theme extends Loco_package_Bundle {
      * {@inheritdoc}
      */
     public function getSystemTargets(){
-        return array ( 
+        return  [ 
             trailingslashit( loco_constant('LOCO_LANG_DIR') ).'themes',
             trailingslashit( loco_constant('WP_LANG_DIR') ).'themes',
-        );
+        ];
     }
 
 
@@ -38,6 +38,15 @@ class Loco_package_Theme extends Loco_package_Bundle {
 
 
     /**
+     * {@inheritDoc}
+     */
+    public function getDirectoryUrl() {
+        $slug = $this->getHandle();
+        return trailingslashit(get_theme_root_uri($slug)).$slug.'/';
+    }
+
+
+    /**
      * {@inheritdoc}
      */
     public function getHeaderInfo(){
@@ -51,14 +60,14 @@ class Loco_package_Theme extends Loco_package_Bundle {
      * {@inheritdoc}
      */
     public function getMetaTranslatable(){
-        return array (
+        return  [
             'Name'        => 'Name of the theme',
             'Description' => 'Description of the theme',
             'ThemeURI'    => 'URI of the theme',
             'Author'      => 'Author of the theme',
             'AuthorURI'   => 'Author URI of the theme',
             // 'Tags'        => 'Tags of the theme',
-        );
+        ];
     }
 
 
@@ -72,19 +81,38 @@ class Loco_package_Theme extends Loco_package_Bundle {
 
 
     /**
+     * @return Loco_package_Theme[]
+     */
+    public static function getAll(){
+        $themes = [];
+        foreach( wp_get_themes(['errors'=>null]) as $theme ){
+            try {
+                $themes[] = self::createFromTheme($theme);
+            }
+            catch( Exception $e ){
+                // @codeCoverageIgnore
+            }
+        }
+        return $themes;
+    }
+
+
+    /**
      * Create theme bundle definition from WordPress theme handle 
      * 
      * @param string short name of theme, e.g. "twentyfifteen"
-     * @return Loco_package_Plugin
+     * @param string theme root if known
+     * @return Loco_package_Theme
      */
-    public static function create( $slug, $root = null ){
+    public static function create( $slug, $root = '' ){
         return self::createFromTheme( wp_get_theme( $slug, $root ) );
     }
 
 
-
     /**
      * Create theme bundle definition from WordPress theme data 
+     * @param WP_Theme
+     * @return Loco_package_Theme
      */
     public static function createFromTheme( WP_Theme $theme ){
         $slug = $theme->get_stylesheet();
@@ -109,11 +137,11 @@ class Loco_package_Theme extends Loco_package_Bundle {
         // otherwise project will use theme root by default
 
         
-        $bundle->configure( $base, array (
+        $bundle->configure( $base,  [
             'Name' => $name,
             'TextDomain' => $domain,
             'DomainPath' => $target,
-        ) );
+        ] );
         
         // parent theme inheritance:
         if( $parent = $theme->parent() ){
@@ -130,5 +158,22 @@ class Loco_package_Theme extends Loco_package_Bundle {
         // do_action( 'loco_bundle_configured', $bundle );
 
         return $bundle;
-    }    
+    }
+
+
+    /**
+     * {@inheritDoc}
+     */
+    public static function fromFile( Loco_fs_File $file ){
+        $find = $file->getPath();
+        foreach( wp_get_themes( ['errors'=>null] ) as $theme ){
+            $base = $theme->get_stylesheet_directory();
+            $path = $base.substr( $find, strlen($base) );
+            if( $find === $path ){
+                return self::createFromTheme($theme);
+            }
+        }
+        return null;
+    }
+
 }

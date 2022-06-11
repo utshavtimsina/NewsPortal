@@ -1,10 +1,10 @@
 === Loco Translate ===
 Contributors: timwhitlock
 Tags: translation, translators, localization, localisation, l10n, i18n, Gettext, PO, MO, productivity, multilingual, internationalization
-Requires at least: 4.1
-Requires PHP: 5.2.4
-Tested up to: 5.4.1
-Stable tag: 2.4.0
+Requires at least: 5.2
+Requires PHP: 5.6.20
+Tested up to: 6.0.0
+Stable tag: 2.6.2
 License: GPLv2 or later
 License URI: http://www.gnu.org/licenses/gpl-2.0.html
 
@@ -13,14 +13,14 @@ Translate WordPress plugins and themes directly in your browser
 
 == Description ==
 
-Loco Translate provides in-browser editing of WordPress translation files.
+Loco Translate provides in-browser editing of WordPress translation files and integration with automatic translation services.
 
-It also provides localization tools for developers, such as extracting strings and generating templates.
+It also provides Gettext/localization tools for developers, such as extracting strings and generating templates.
 
 Features include:
 
 * Built-in translation editor within WordPress admin
-* Integration with automatic translation APIs
+* Integration with translation APIs including DeepL, Google, Microsoft and Lecto AI
 * Create and update language files directly in your theme or plugin
 * Extraction of translatable strings from your source code
 * Native MO file compilation without the need for Gettext on your system
@@ -95,12 +95,137 @@ We don't collect your data or snoop on you. See the [plugin privacy notice](http
 3. PO source view with text filter and clickable file references
 4. Restore tab showing PO diff view with revert function
 5. Showing access to translations by installed language
-
+6. Suggestion feature showing results from several providers
 
 
 == Changelog ==
 
-= 2.4.0
+= 2.6.2 =
+* Bumped WordPress version to 6.0.0
+* Better labelling of reverse-engineered plural forms
+* Removed undocumented loco_locale_plurals filter; use loco_po_headers
+* Added PO folder location indicator in breadcrumb
+* Added syntax validation for formatted strings
+
+= 2.6.1 =
+* Bumped WordPress version to 5.9.2
+* Fix for CVE-2022-0765 reported by Taurus Omar via wpscan
+
+= 2.6.0 =
+* Dropped support for WordPress < 5.2
+* Code upgrades for >= PHP 5.6.20
+* Bumped WordPress version to 5.9.1
+* Removed Yandex API integration
+* Added loco_compile_script_reference filter
+* Plural-Forms retained when copying PO to same language
+
+= 2.5.8 =
+* Compatible with PHP 8.1
+* Bumped WordPress version to 5.9
+* Added deprecation warning prior to v2.6
+
+= 2.5.7 = 
+* Fixed bug in 2.5.6 where remote APIs could not be used in batch mode
+* Enforcing 10k character limit per request for Microsoft and Yandex Translators
+* Style fix for revision/diff table under restore tab
+
+= 2.5.6 =
+* Added loco_api_provider_source filter
+* Fixed bug loading user preferences saved in older version
+* Refactored file finder to avoid recursive function calls
+* Fixed bug displaying two forms for zero plural languages
+* Added Lecto AI to translation API providers
+* Bumped WordPress version to 5.8.3
+
+= 2.5.5 =
+* Fixed double file extension vulnerability reported by WordFence
+* Better performance when scanning directories for file types
+
+= 2.5.4 =
+* Fixed vulnerability reported by Tomi Ashari via wpscan
+* Added filters loco_po_headers and loco_pot_headers
+* Bumped WordPress version to 5.8.1
+
+= 2.5.3 =
+* Adds option to merge JSON translations when syncing from PO
+* Adds screen for editing file headers and sync options
+* Fix for missing responseText in failed Ajax responses
+* Fix for HTML entities returned from `number_format_i18n`
+* Localized number formatting in JavaScript
+* Replaced usage of date_i18n with wp_date
+* Added configurable API endpoint for DeepL
+* Bumped WordPress version to 5.7.2
+
+= 2.5.2 =
+* Added implied formality and loco_locale_formality filter
+* Added cli fetch command (experimental)
+* Bumped WordPress version to 5.7
+
+= 2.5.1 =
+* Support for new Yandex translate API
+* Support for DeepL formality parameter
+* Removed literal "1" and "one" instances from singular strings
+* Buffering compiled JSON to support strings from multiple sources
+* Added `loco_compile_single_json` filter for specifying custom JSON
+* Added `loco_extracted_template` hook for adding custom strings
+* Sync no longer removes the editor's current text filter
+* Bumped WordPress version to 5.6.2
+
+= 2.5.0 =
+* PHP 8.0.0 compatibility
+* Bumped WordPress version to 5.6.0
+* Added JSON translation file generation
+* Added custom JSON loading to LoadHelper
+* Disabled emoji image replacement on our admin screens
+
+= 2.4.6 =
+* Fixed critical bug syncing PO directly to source code
+* Added plugin setting for allowing/disallowing missing POT
+* Fixed WP5.5 issue with multiple ID attributes on script tags
+
+= 2.4.5 =
+* Added WP-CLI sync and extract commands
+* Fixed {locale} placeholder bug introduced in 2.4.4
+* Improved handling of invalid character encodings
+* Sync (msgmerge) moved to back end 
+* New fuzzy matching with fuzziness setting
+* Bumped WordPress version to 5.5.3
+
+= 2.4.4 =
+* Added PO file upload feature
+* Added download button to file info page
+* Fix for extracting plurals also used as singulars
+* Updating API keys no longer require editor page reload
+* Catching fatal startup errors in loco.php
+* Supporting max_php_size=0 to mean no size restriction
+* Auto-update detection now checks new site options
+* Bumped WordPress version to 5.5.1
+
+= 2.4.3 =
+* Improved fix for default syncing of msgstr fields
+* Reverted accidental removal of js debug flag
+* Minor fixes to API error messages
+* Removed use of jQuery.browser
+* Bugfix for new preferences in usermeta
+
+= 2.4.2 =
+* Added loco_file_written hook
+* Improved script tampering warning
+* Added keypress for selecting auto-suggestion
+* Sync no longer copies msgstr fields by default
+* Style tweaks for WordPress 5.5
+
+= 2.4.1 =
+* Fixed mapping of some API languages
+* Added locale filter to user preferences
+* Added debugging for credential form failures
+* Fixed deprecated use of array_key_exists
+* Added DeepL API service provider
+* Improved script tampering detection
+* Bumped WordPress version to 5.5
+* Added "modern" skin styles
+
+= 2.4.0 =
 * Added support for third party translation APIs
 * Added file references to editor source pane in code view
 * Added fuzzy matching during editor Sync operation
@@ -142,7 +267,7 @@ We don't collect your data or snoop on you. See the [plugin privacy notice](http
 * Bumped WP compatibility to 5.2.1
 
 = 2.2.2 =
-* Security fixes for reading sensitive files
+* Security fixes as per [exploit-db 46619](https://www.exploit-db.com/exploits/46619) 
 * Fixed old PHP version error in data files
 * Bumped WP compatibility to 5.1.1
 
@@ -343,8 +468,8 @@ We don't collect your data or snoop on you. See the [plugin privacy notice](http
 
 == Upgrade Notice ==
 
-= 2.4.0 =
-* Various improvements including automatic translation support
+= 2.6.2 =
+* Various improvements and bug fixes
 
 
 

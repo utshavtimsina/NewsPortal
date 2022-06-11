@@ -1,9 +1,9 @@
 === Visitor Traffic Real Time Statistics ===
 Contributors: wp-buy, osamaesh
-Tags: visitor, traffic, online, visitors online plugin,visitors online, count visitor, google analytics, analytics, GeoIP, Geo locations, analytics dashboard, visits, statistics, stats, visitors, chart, browser, blog, today, yesterday, week, month, wp Statistics, year, post, page, sidebar, summary, feedburner, hits, pagerank, google, histats, alexa, live visit, counter, diagram, graph
+Tags: visitor, traffic, statistics, analytics, stats, online, Visit, WordPress analytics ,visitors online, count visitor, google analytics, analytics, GeoIP, Geo locations, analytics dashboard, visits, chart, browser, blog, today, yesterday, week, month, wp Statistics, year, post, page, sidebar, summary, feedburner, hits, pagerank, google, histats, alexa, live visit, counter, diagram, graph
 Requires at least: 3.0.1
-Tested up to: 5.4
-Stable tag: trunk
+Tested up to: 6.0
+Stable tag: 6.1
 License: GPLv2 or later
 License URI: http://www.gnu.org/licenses/gpl-2.0.html
 
@@ -16,6 +16,18 @@ This plugin will help you to track your visitors, browsers, operating systems, v
 When it comes to ease of use, Visitor Traffic Real Time Statistics comes in first, You will have a real Counter and statistics plugin for your WordPress website..
 This plugin will help you to track your visitors, browsers, operating systems, visits and much more in one dashboard page..
 
+And you can use one the summary statistics shortcodes:
+
+You can use one of the following shortcodes:
+
+* **[ahc_stats_widget]** adds a front-end widget to display the site statistics
+* **[ahc_stats_widget title="" fontsize="16" fonttype="" display_today_visitors=true display_today_pageviwes=true display_total_visitors=true display_total_pageviwes=true ]** adds a front-end widget to display the site statistics with custom parametrs
+
+* **[ahc_today_visitors]** this will return today's visitors
+* **[ahc_today_visits]** this will return today's visits
+* **[ahc_total_visitors]** this will return total visitors
+* **[ahc_total_visits]** this will return total visits
+
 
 <strong>Visitor Traffic Real Time Statistics Basic version includes: </strong>
 <ul>
@@ -26,11 +38,18 @@ This plugin will help you to track your visitors, browsers, operating systems, v
 <li>Browsers statistics will help you to see the most popular browser</li>
 <li>Recent visitors and the visitor source , also you can see the referrer link	</li>
 <li>Top referring sites & the visitors count for each one</li>
+<li>Shortcode support</li>
+
 </ul>
 
-
+<p></p>
 <strong>Visitor Traffic Real Time Statistics Pro includes: </strong>
+<p></p>
+&#9989;<a href="https://www.wp-buy.com/product/visitors-traffic-real-time-statistics-pro/#readme"><strong> PRO version product page</strong></a>
+<p></p>
 <ul>
+
+<li>Multisite (network) support</li>
 <li>User online to show how many people are currently viewing your blog</li>
 <li>Comprehensive overview page (Dashboard), including browser versions, country stats, hits, exclusions, referrers, searches, search words and visitors</li>
 <li>Visits, see how many hits your site gets each day and each week & month</li>
@@ -51,11 +70,13 @@ This plugin will help you to track your visitors, browsers, operating systems, v
 <li>Traffic by title Statistics will help you to see the top ten posts and number of hits</li>
 
 </ul>
+<p></p>
+
 
 <strong>Useful Links:</strong>
 
-<a href="http://www.wp-buy.com/product/visitors-traffic-real-time-statistics-pro/"><strong>Check all the features</strong></a> <br>
-<a href="https://www.wp-buy.com/support-center/"><strong>Support Center</strong></a> <br>
+&#9989;<a href="https://www.wp-buy.com/product/visitors-traffic-real-time-statistics-pro/#gopro"><strong> Go PRO Now :)</strong></a>
+&#9989;<a href="https://www.wp-buy.com/support-center/"><strong>Support Center</strong></a> <br />
 
 
 
@@ -65,6 +86,78 @@ This plugin will help you to track your visitors, browsers, operating systems, v
 3. Activate the Plugin via plugins page
 
 Thanks!
+
+
+
+== Frequently Asked Questions ==
+
+= How to setup this plugin? =
+1. Download the package.
+2. Upload the package using your plugins page > add new > upload or Extract the contents of .zip folder to wp-content/plugins/ folder
+3. Activate the Plugin via plugins page
+
+Or you can go to your website dashboard > plugins > add new and search for visitor traffic real time statistics then download and activate it.
+
+Notes:
+* After installing the plugin you need to go to plugin settings page and select your timezone.
+* If you're using any caching plugins, Don't forget to clear your website cache.
+
+= How to setup the PRO version of this plugin? =
+1. Purchase your licenses by visiting our website <a href="http://www.wp-buy.com/product/visitors-traffic-real-time-statistics-pro/"><strong>here</strong></a>
+2. Check your email (Inbox and Junk mail) to download the plugin zipped file
+3. Open your website dashboard > Plugins > Add new and upload the plugin file (zipped file)
+4. Activate the plugin
+5. Go to your website main menu > visitor Traffic Pro
+
+Notes:
+* After installing the plugin you need to go to plugin settings page and select your timezone.
+* If you're using any caching plugins, Don't forget to clear your website cache.
+
+
+= Shortcodes for summary statistics =
+You can use one of the following shortcodes:
+
+* **[ahc_stats_widget]** adds a front-end widget to display the site statistics
+* **[ahc_stats_widget title="" fontsize="16" fonttype="" display_today_visitors=true display_today_pageviwes=true display_total_visitors=true display_total_pageviwes=true ]** adds a front-end widget to display the site statistics with custom parametrs
+
+* **[ahc_today_visitors]** this will return today's visitors
+* **[ahc_today_visits]** this will return today's visits
+* **[ahc_total_visitors]** this will return total visitors
+* **[ahc_total_visits]** this will return total visits
+
+* **[ahc_yesterday_total_visitors]** this will return the yesterday's total visitors
+* **[ahc_yesterday_total_visits]** this will return the yesterday's total visits
+
+= GDPR Compliant? =
+All the data is saved locally in your WordPress, it’s not necessary to create a data processing contract with an external company!
+
+= Does this plugin support Multisite? =
+This plugin doesn’t officially support the multisite feature; But it should function without any issue. We will fully support multisite in the next releases
+
+= How do I stop automatically unzipping downloaded zip files in Mac Safari? =
+
+If you are MAC user,  you may face this problem problem
+
+Your browser (Safari) is automatically unzipping downloaded zip files ? And this is not good because i want the plugin file to still compressed as is
+To fix this please do the following steps:
+
+1. Open Safari
+2. Click Preferences
+3. Under the General tab, unCheck the option Open “safe” files after downloadin
+
+= Does this plugin work with caching plugins? =
+Yes, the cache support added in the latest 5 versions.
+
+If you're using any caching plugins, Don't forget to clear your website cache.
+
+
+
+= PHP 7 Support? =
+yes, This plugin is working fine with PHP 7.x, If you have any issues.Please feel free to report it.
+
+= IPv6 Support? =
+This plugin supports IPv6; however, PHP must be compiled with IPv6 support enabled;
+
 
 
 == Screenshots ==
@@ -84,6 +177,232 @@ Thanks!
 
 
 == Changelog ==
+
+= 6.1 =
+1. Bug fixing in traffic by IP report
+
+
+= 5.9 =
+1. Bug fixing (sweetalert conflict)
+
+
+
+= 5.8 =
+1. Bug fixing in multisite
+
+
+= 5.7 =
+1. multisite (network) support
+
+
+= 5.6 =
+1. Shortcode improvements
+
+You can use one of the following shortcodes:
+
+* **[ahc_stats_widget]** adds a front-end widget to display the site statistics
+* **[ahc_stats_widget title="" fontsize="16" fonttype="" display_today_visitors=true display_today_pageviwes=true display_total_visitors=true display_total_pageviwes=true ]** adds a front-end widget to display the site statistics with custom parametrs
+
+* **[ahc_today_visitors]** this will return today's visitors
+* **[ahc_today_visits]** this will return today's visits
+* **[ahc_total_visitors]** this will return total visitors
+* **[ahc_total_visits]** this will return total visits
+
+= 5.5 =
+1. new feature (Shortcode instead of widget)
+2. [ahc_stats_widget] Please read the plugin description for more details
+
+
+= 5.4 =
+1. Bug fixing - fix conflict with Dokan plugin
+
+
+= 5.3 =
+1. Bug fixing in the plugin accessibility
+
+
+= 5.2 =
+1. Bug fixing in the plugins page - settings URL
+
+
+= 5.1 =
+1. Bug fixing in the plugin accessibility
+
+
+= 4.9 =
+1. Settings page - bug fixing
+
+
+= 4.8 =
+1. new feature, User Role Exclusion From Statistics
+
+
+= 4.7 =
+1. interface enehancment
+
+
+= 4.6 =
+1. Bug fixing in menu
+
+
+= 4.5 =
+1. Bug fixing in IP execlusion
+
+
+
+= 4.4 =
+1. Escape variables and and options
+
+
+
+= 4.3 =
+1. Security bug fixes 
+
+
+= 4.2 =
+1. Bug fixes & sanitizating
+
+
+
+= 4.1 =
+1. Security bug fixes
+2. fix IP exclusion issue
+
+
+= 3.17 =
+1. Bug fixes in settings - part 2
+
+
+
+= 3.16 =
+1. Bug fixes in settings
+
+
+= 3.15 =
+1. Bug fixes in widget
+
+
+
+= 3.14 =
+1. Bug fixes - PHP warning message - fixing another issue
+
+
+
+= 3.13 =
+1. Bug fixes - PHP warning message
+
+
+= 3.12 =
+1. Bug fixes - NOTICE message
+
+
+
+= 3.11 =
+1. Query improvements reported by @purityboy83 (Thanks purityboy83 for reporting this type of issues)
+
+
+
+= 3.10 =
+1. Bug fixes - NOTICE message
+
+
+= 3.9 =
+1. Authenticated (subscriber+) SQL Injection - Security Bug fixes
+
+= 3.8 =
+1. WordPress 5.8 compatibility
+
+= 3.7 =
+1. Security bug fixes
+
+= 3.6 =
+1. WordPress 5.8 compatibility
+
+= 3.5 =
+1. Bug fixing in the Statistics widget
+
+= 3.4 =
+1. Reactivate the Statistics widget
+
+= 3.3 =
+1. Bug fixing in the settings page
+
+= 3.2 =
+1. Upgrade bootstrap libraries
+2. use google charts instead of jqplot
+3. Sanitize data
+
+= 3.1 =
+1. Security bug fixes
+2. CSS fixes
+3. Upgrade libraries
+
+= 2.13 =
+1. Removing start index page
+
+= 2.12 =
+1. Urgent bug fixing (Security Notice) in the ajax calling
+
+= 2.11 =
+1. Fix PHP Notice in the settings page
+
+= 2.10 =
+1. Bug fixing (2) in the user roles (settings page)
+
+= 2.9 =
+1. Bug fixing in the user roles (settings page)
+
+= 2.8.1 =
+
+1. bug fixing in javascript
+
+= 2.8 =
+1. Adding new options in the settings page
+2. bug fixing in javascript
+
+
+= 2.7.4 =
+1. Hot fixes in GEO locations
+2. bug fixing - "PHP Notice:  Undefined variable"
+
+= 2.7.3 =
+
+1. bug fixing - "PHP Notice:  Undefined variable"
+2. adding deactivation poll as modal window, This will help us figure out why the plugin was deactivated
+3. Enhancements in getting country and city names
+
+= 2.7.2 =
+
+1. fix notice message in the plugins page after latest wordpress updates
+
+= 2.7.1 =
+
+1. Add one starting page for all of our plugins
+2. CSS enhancements
+3. Hot fixes for the recent code
+
+= 2.6 =
+1. Track logged in users (admin user)
+2. css enhancements
+
+= 2.5 =
+1. Bug fixing in top referring sites
+
+= 2.4 =
+1. Bug fixing in traffic by title report
+
+= 2.3 =
+1. Bug fixing in GEOIP library
+
+= 2.2 =
+1. Bug fixing in search engines statistics (PHP Notice:  wpdb::prepare)
+
+= 2.1 =
+1. Design enhancements
+2. Bug fixing in summary statistics
+3. Unlock 3 premium features
+
+
 = 1.21 =
 Bug fixing - Notice: Constant IS_DEMO already defined
 = 1.20 =

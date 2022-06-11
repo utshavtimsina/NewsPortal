@@ -10,34 +10,60 @@ class Loco_mvc_ViewParams extends ArrayObject implements JsonSerializable {
      * @return string
      */
     public function escape( $text ){
-        return htmlspecialchars( $text, ENT_COMPAT, 'UTF-8' );
+        return htmlspecialchars( (string) $text, ENT_COMPAT, 'UTF-8' );
     }
 
 
     /**
      * format integer as string date, including time according to user settings
      * @param int unix timestamp
-     * @param string date format
+     * @param string|null date format
      * @return string
      */
      public static function date_i18n( $u, $f = null ){
         static $tf, $df, $tz;
         if( is_null($f) ){
-            if( ! $tf ){
+            if( is_null($tf) ){
                 $tf = get_option('time_format') or $tf = 'g:i A';
                 $df = get_option('date_format') or $df= 'M jS Y'; 
             }
             $f = $df.' '.$tf;
         }
-        // Fix Wordpress's broken timezone implementation
+        // date_i18n was replaced with wp_date in WP 5.3
+        if( function_exists('wp_date') ){
+             return wp_date($f,$u);
+        }
+        // date_i18n expects timestamp to include offset
         if( is_null($tz) ){
-            $tz = date_default_timezone_get() or $tz = 'UTC';
-            $wp = get_option('timezone_string') or $wp = $tz;
-            if( $tz !== $wp ){
-                date_default_timezone_set( $wp );
+            try {
+                $wp = get_option('timezone_string') or $wp = date_default_timezone_get();
+                $tz = new DateTimeZone($wp);
+            }
+            catch( Exception $e ){
+                $tz = new DateTimeZone('UTC');
             }
         }
-        return date_i18n( $f, $u );
+        $d = new DateTime(null,$tz);
+        $d->setTimestamp($u);
+        return date_i18n( $f, $u + $d->getOffset() );
+    }
+
+
+    /**
+     * Wrapper for sprintf so we can handle PHP 8 exceptions
+     * @param string
+     * @param array
+     * @return string
+     */
+    public static function format( $format, array $args ){
+        try {
+            return vsprintf($format,$args);
+        }
+        // Note that PHP8 will throw Error (not Exception), PHP 7 will trigger E_WARNING
+        catch( Error $e ){
+            Loco_error_AdminNotices::warn( $e->getMessage().' in vsprintf('.var_export($format,true).')' );
+            return '';
+        }
     }
 
 
@@ -63,21 +89,15 @@ class Loco_mvc_ViewParams extends ArrayObject implements JsonSerializable {
     /**
      * Print escaped property value
      * @param string property key
-     * @param mixed optional arguments to substitute into value
      * @return string empty string
      */
     public function e( $p ){
         $text = $this->__get($p);
-        if( 1 < func_num_args() ){
-            $args = func_get_args();
-            $text = call_user_func_array( 'sprintf', $args );
-        }
         echo $this->escape( $text );
         return '';
     }
 
-    
-    
+
     /**
      * Print property as string date, including time
      * @param string property name
@@ -85,13 +105,10 @@ class Loco_mvc_ViewParams extends ArrayObject implements JsonSerializable {
      * @return string empty string
      */ 
     public function date( $p, $f = null ){
-        if( $u = $this->__get($p) ){
-            $s = self::date_i18n( $u, $f );
+        $u = (int) $this->__get($p);
+        if( $u > 0 ){
+            echo $this->escape( self::date_i18n($u,$f) );
         }
-        else {
-            $s = '';
-        }
-        echo $this->escape($s);
         return '';
     }
 
@@ -117,7 +134,18 @@ class Loco_mvc_ViewParams extends ArrayObject implements JsonSerializable {
      * @return string empty string
      */
     public function f( $p, $f = '%s' ){
-        echo $this->escape( sprintf( $f, $this->__get($p) ) );
+        echo $this->escape( self::format( $f, [$this->__get($p)] ) );
+        return '';
+    }
+
+
+    /**
+     * Print property value for JavaScript
+     * @param string property name
+     * @return string empty string
+     */
+    public function j( $p ){
+        echo json_encode($this->__get($p) );
         return '';
     }
 
@@ -125,6 +153,7 @@ class Loco_mvc_ViewParams extends ArrayObject implements JsonSerializable {
     /**
      * @return array
      */
+    #[ReturnTypeWillChange]
     public function jsonSerialize(){
         return $this->getArrayCopy();
     }
@@ -157,14 +186,7 @@ class Loco_mvc_ViewParams extends ArrayObject implements JsonSerializable {
      * @codeCoverageIgnore
      */
     public function dump(){
-        echo '<pre>',$this->escape( json_encode( $this->__debugInfo(),JSON_PRETTY_PRINT|JSON_UNESCAPED_SLASHES|JSON_UNESCAPED_UNICODE ) ),'</pre>';
-    }
-
-    /**
-     * @codeCoverageIgnore
-     */
-    public function __debugInfo() {
-        return $this->getArrayCopy();
+        echo '<pre>',$this->escape( json_encode( $this->getArrayCopy(),JSON_PRETTY_PRINT|JSON_UNESCAPED_SLASHES|JSON_UNESCAPED_UNICODE ) ),'</pre>';
     }
 
 

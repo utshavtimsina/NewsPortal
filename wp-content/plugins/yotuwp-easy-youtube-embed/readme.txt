@@ -2,7 +2,7 @@
 Contributors: yotuwp
 Tags: youtube lightbox, youtube channel, youtube gallery, youtube playlist, youtube videos, video gallery, video gallery responsive, youtube embed, yotu
 Requires at least: 4.3
-Tested up to: 5.2
+Tested up to: 5.8
 Stable tag: 4.3
 Donate link: https://www.paypal.me/tuongpg
 License: GPLv2 or later
@@ -54,7 +54,7 @@ Allow you generate shortcode YotuWP to use on page builders, widgets, product de
 
 ###BECOME A PREMIUM USER
 <blockquote>
-<p>YotuWP has Pro version which comes with several additional benefits. Only $14 for start!</p>
+<p>YotuWP has Pro version which comes with several additional benefits. Only $21 for start!</p>
 <ul>
 <li>Carousel Layout</li>
 <li>Masonry Layout</li>
@@ -113,6 +113,13 @@ Please go to setting tab YotuWP > General > Video Thumbnail Ratio
 Then select value 'HD - 16:9' then press Save Change and try out it.
 
 == Changelog ==
+
+= 1.3.4.5 - Aug 22th, 2020 =
+* Auto Next to Video
+* Origin message error on Console browser
+* Next/Prev/Load more problem once replace with special characters
+
+New version going to release soon!
 
 = 1.3.4 - Nov 22th, 2018 =
 * [Add] Hover Effects - animation when hover on a video thumbnail on galllery. 20+ effects.
